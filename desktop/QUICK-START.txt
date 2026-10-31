@@ -1,0 +1,32 @@
+SIROCCO LIVE 1.2
+Sirocco Team · Windows x64 portable
+
+1. Giải nén TOÀN BỘ thư mục ZIP vào một thư mục riêng.
+2. Nhấp đúp "Sirocco Live.exe". Không cần cài Node.js hay chạy lệnh.
+3. Bảng điều khiển mở trong trình duyệt mặc định. Chọn nhóm, thêm tên và link USACO IDE.
+4. Chỉnh bố cục, chữ, Input. Bấm "Lưu & áp dụng".
+5. Streamlabs/OBS: thêm Browser Source, Width 1920, Height 1080, FPS 30.
+
+Phòng điều khiển: http://127.0.0.1:8765/
+Không chuyên:    http://127.0.0.1:8765/view/nonpro
+Chuyên Tin:      http://127.0.0.1:8765/view/pro
+
+ỨNG DỤNG CHẠY TRONG NỀN
+Đóng tab trình duyệt vẫn giữ nguồn live. Nhấp đúp logo ở khay hệ thống để mở lại.
+Muốn dừng: chuột phải biểu tượng Sirocco > "Dừng nguồn & thoát".
+Đừng xoá hoặc di chuyển các thư mục app và runtime khi đang dùng.
+
+CẤU HÌNH
+Lưu tại %LOCALAPPDATA%\Sirocco Live\data\config.json.
+Nhật ký tại %LOCALAPPDATA%\Sirocco Live\logs.
+Để chuyển từ bản cũ: xuất cấu hình từ bản cũ, rồi nhập lại ở "Tên cuộc thi & quản lý cấu hình".
+Bộ ZIP không chứa link thí sinh hay cấu hình riêng của người tổ chức.
+
+YÊU CẦU
+Windows 10/11 x64, .NET Framework 4.8 (có sẵn trên hầu hết Windows 10/11).
+Cần Internet để nhận Code và Input từ USACO IDE. Font, logo và icon được đóng gói sẵn.
+Bản portable chưa ký số. File nhận diện sản phẩm và phiên bản nằm trong Properties > Details.
+Output và tín hiệu Run chưa được đồng bộ. Đây là công cụ nhận Code + Input, không chạy bài thay thí sinh.
+
+GIẤY PHÉP
+Logo thuộc Sirocco Team. Thành phần mã nguồn mở và Node.js có giấy phép trong thư mục licenses.
