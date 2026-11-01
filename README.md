@@ -26,7 +26,7 @@ Mở [phòng điều khiển](http://127.0.0.1:8765/). Trên Windows, sau lần 
 - Nút quản lý cạnh tên khung cho phép đổi tên hoặc xoá. Đổi tên giữ nguyên link Browser Source. Khi xoá khung có thí sinh, chọn khung đích để giữ toàn bộ tên, link USACO và handle. Có tối đa 12 khung và 16 thí sinh trong một phiên.
 - Cấu hình 1.3 được chuyển sang phiên bản 2 và thêm ICPC một lần. Các nguồn đã xoá sẽ không tự xuất hiện lại. Xuất/nhập cấu hình giữ các khung tuỳ chọn.
 - Giao diện quản trị dùng nền trung tính, chữ sáng và thanh bên bám đầy chiều cao màn hình khi cuộn. Thanh điều hướng đưa tới nguồn phát, thí sinh, điểm và cấu hình. Lưu các thiết lập hình ảnh giữ nguyên iframe xem trước.
-- Bảng điểm trên live có nền sáng, tổng điểm vàng cát và điểm từng bài tương phản cao. Code và Input dùng nền tối riêng. Bố cục tự tính số cột/hàng theo số thí sinh.
+- Nguồn live dùng bảng màu than đồng nhất cho code, Input và thành tích. Thanh điểm nền tối, tổng điểm vàng cát, bài đạt điểm xanh dịu; handle và điểm từng bài ở trái, tổng điểm và lượt nộp ở phải. Ô nhỏ tự xếp lại để giữ handle dễ đọc. Bố cục tự tính số cột/hàng theo số thí sinh.
 - Hoạt ảnh theo hướng dẫn Animate UI cho CSS: phản hồi nút, chuyển khung, mở/đóng dialog và đổi điểm. Dùng các curve/timing theo vai trò, tôn trọng `prefers-reduced-motion`; giữ native dialog cho quản lý focus và Escape. Dùng tween CSS thay cho spring React; không thêm React hoặc gói Animate UI vào ứng dụng JavaScript thuần.
 
 ### Thành tích Codeforces trên nguồn live
