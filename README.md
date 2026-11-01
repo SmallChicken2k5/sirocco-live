@@ -20,12 +20,22 @@ npm start
 
 Mở [phòng điều khiển](http://127.0.0.1:8765/). Trên Windows, sau lần cài thư viện và build đầu tiên, có thể mở `START.vbs` cho các lần dùng tiếp theo. Bản `.exe` portable là bộ mở tùy chọn cho cùng ứng dụng web.
 
-## Bản 1.5: VNOJ và phiên thi ảo
+## Bản 1.6: Kiểu ICPC/IOI, Real Name và hiệu ứng kết quả
+
+- Trong **Điểm thi đấu → Kiểu hiển thị**, chọn **Theo contest**, **ICPC** hoặc **IOI**. ICPC hiện `AC` cho từng bài đã giải, tổng số bài và penalty; IOI hiện điểm số. Lựa chọn này không đổi cơ chế chấm trên website thi.
+- Ô **Real Name** nằm cạnh nickname Codeforces/VNOJ. Họ tên hiển thị trên đầu ô code và cạnh nickname ở thanh thành tích; bỏ trống sẽ dùng tên ô đang có. Dữ liệu cũ, link và phiên đã ghim được giữ lại.
+- Kết quả mới phủ xanh/đỏ toàn ô thí sinh và hiện nhãn ngắn. ICPC: AC xanh, kết quả không AC đỏ. IOI: tăng điểm so với lượt nộp trước cùng bài hoặc đạt điểm tối đa xanh; thấp điểm hơn đỏ; bằng điểm dưới mức tối đa không phát hiệu ứng. Nếu lịch sử API bị giới hạn và không có lượt trước của bài đó, dùng điểm BXH lúc kết nối làm mốc. Đang chấm, dữ liệu cũ, tải lại trang và đổi hạng không phát lại; với dữ liệu từng lượt nộp, chấm lại cùng mã bài nộp cũng không phát lại. Khi chỉ theo BXH, ứng dụng chỉ biết thay đổi trên BXH, không phân biệt được mọi trường hợp chấm lại.
+- Có công tắc hiệu ứng, **Sound effect**, âm lượng và nút **Thử xanh / AC**, **Thử đỏ**. Âm thanh được tổng hợp tại máy, không tải từ dịch vụ ngoài. Sound mặc định tắt. Khi bật, mở nguồn phát và bấm **Bật âm thanh kết quả** một lần để trình duyệt cho phép phát. Với OBS/Streamlabs, dùng Interact/Tương tác nguồn để bấm nút, rồi đưa âm thanh Browser Source vào mixer theo cấu hình phần mềm phát sóng.
+- Hiệu ứng dùng opacity và chuyển vị ngắn theo token Animate UI bằng CSS; chế độ giảm chuyển động giữ màu/fade và bỏ chuyển vị. Nút thử chỉ tác động bản xem trước, không tạo bài nộp hay đổi điểm thật.
+- Codeforces đọc kết quả từng submission qua API, lọc đúng phiên đã chọn. VNOJ công khai chỉ cho biết điểm tốt nhất và số lần sai; hiệu ứng theo BXH hoạt động với thay đổi thấy được, nhưng không suy ra một lần nộp IOI thấp điểm hơn từ tổng điểm không đổi.
+- **VNOJ Companion** đi kèm trong `companion/vnoj`: ghép nối để đọc kết quả phiên thi ảo đang đăng nhập trên cùng máy và nhận cả lượt thấp điểm hơn. [Hướng dẫn tiện ích](companion/vnoj/README.md). Chưa ghép nối sẽ có nhãn “Theo thay đổi BXH”; đã nối sẽ hiện “Kết quả từng lượt nộp”. Tiện ích chưa hỗ trợ gửi từ máy thí sinh khác đến máy BTC.
+
+## VNOJ và phiên thi ảo
 
 - Trong **Điểm thi đấu**, chọn nguồn **VNOJ · ICPC**, bật theo dõi và nhập link `https://oj.vnoi.info/contest/<mã contest>`.
 - Nhập username VNOJ cho thí sinh rồi lưu. Bộ chọn phiên sẽ hiện các lượt chính thức/thi ảo đọc được từ BXH công khai. Chọn đúng lượt rồi lưu lại để ghim mã tham gia; nhiều lượt không tự chọn theo điểm cao nhất. Nếu phiên đã ghim biến mất, ứng dụng báo chưa tìm thấy và không đổi sang lượt khác.
 - Nguồn live ghép code/Input USACO với số bài, penalty, hạng và điểm từng bài từ VNOJ. Hạng theo BXH công khai gồm các phiên thi ảo, không phải BXH riêng giữa các thí sinh trên live. Theo dõi độc lập với code; lấy lại điểm mỗi 15–180 giây theo thiết lập và thời gian cache của VNOJ.
-- Hiện hỗ trợ BXH công khai trên `oj.vnoi.info`, thể thức ICPC. Không cần khoá API hoặc cookie. BXH riêng tư cần đăng nhập chưa được hỗ trợ. Dữ liệu đóng băng được giữ theo nguồn; chưa đọc verdict lần nộp riêng của từng phiên và không suy ra verdict từ tổng điểm.
+- Hiện hỗ trợ BXH công khai trên `oj.vnoi.info`, thể thức ICPC và IOI. Không cần khoá API hoặc cookie cho BXH công khai. BXH riêng tư cần đăng nhập chưa được hỗ trợ. Dữ liệu đóng băng được giữ theo nguồn; kết quả riêng từng lượt thi ảo cần Companion, không suy ra từ tổng điểm.
 - Cấu hình Codeforces/Gym tiếp tục hoạt động; mỗi khung có nguồn điểm riêng. Trường cấu hình `codeforces.provider` dùng để phân biệt nguồn, giữ tương thích với file cấu hình cũ.
 
 ## Khung phát tuỳ chọn

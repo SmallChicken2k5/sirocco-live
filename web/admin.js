@@ -46,7 +46,7 @@ export class ControlRoom {
     $('iframe').addEventListener('load',() => { this.preview(); $('.preview-frame').classList.add('ready'); });
     if(animate)$('.control-main').classList.add('content-enter');
   }
-  structure(){return JSON.stringify([this.config.title,this.group,Object.entries(this.config.groups).map(([id,g])=>[id,g.title]),this.config.candidates.map(c=>[c.id,c.name,c.group,c.enabled])]);}
+  structure(){return JSON.stringify([this.config.title,this.group,Object.entries(this.config.groups).map(([id,g])=>[id,g.title]),this.config.candidates.map(c=>[c.id,c.name,c.realName,c.group,c.enabled])]);}
   row(c,i,g) {
     return `<article class="participant-row" data-id="${c.id}">
       <div class="participant-number">${String(i+1).padStart(2,'0')}</div>

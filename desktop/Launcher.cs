@@ -10,8 +10,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyDescription("Sirocco Team broadcast studio")]
 [assembly: System.Reflection.AssemblyCompany("Sirocco Team")]
 [assembly: System.Reflection.AssemblyProduct("Sirocco Live")]
-[assembly: System.Reflection.AssemblyVersion("1.5.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.5.0.0")]
+[assembly: System.Reflection.AssemblyVersion("1.6.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.6.0.0")]
 
 namespace SiroccoLive {
     internal static class Program {
@@ -98,7 +98,7 @@ namespace SiroccoLive {
         }
         private bool Healthy() { try{return Get("/api/health").Contains("\"name\":\"Sirocco Live\"");}catch{return false;} }
         internal void Verify() {
-            if(!Get("/api/health").Contains("\"version\":\"1.5.0\"")) throw new Exception("Unexpected server version");
+            if(!Get("/api/health").Contains("\"version\":\"1.6.0\"")) throw new Exception("Unexpected server version");
             if(!Get("/").Contains("sirocco-favicon.png")) throw new Exception("Missing branded UI");
             if(!Get("/api/state").Contains("snapshots")) throw new Exception("Missing studio state");
             if(!Get("/view/pro").Contains("studio.css")) throw new Exception("Missing broadcast route");

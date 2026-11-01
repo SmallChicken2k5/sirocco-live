@@ -13,6 +13,12 @@ function connection(overrides = {}) { return { revision: 0, status: () => ({ con
 function tracker(t, source) { const updates = []; const instance = new CodeforcesTracker(source, s => updates.push(structuredClone(s))); t.after(() => instance.close()); return { instance, updates }; }
 async function waitFor(predicate) { const deadline = Date.now() + 2500; while (Date.now() < deadline) { if (predicate()) return; await new Promise(r => setTimeout(r, 5)); } throw new Error('Tracker did not reach expected state'); }
 const finished = instance => instance.snapshots.get('nonpro')?.status === 'live' && !instance.snapshots.get('nonpro')?.fetching;
+test('Codeforces result events come from new final submissions, including a lower score with unchanged standings',async t=>{
+  let submissions=[submission(10,'fixture_user','CONTESTANT',70)];
+  const {instance}=tracker(t,connection({submissions:async()=>submissions}));const c=config();c.groups.nonpro.codeforces.style='IOI';instance.reconcile(c);await waitFor(()=>finished(instance));assert.equal(instance.snapshots.get('nonpro').participants.one.resultEvents.length,0);
+  submissions=[submission(11,'fixture_user','CONTESTANT',20),...submissions];instance.refresh('nonpro');await waitFor(()=>finished(instance)&&instance.snapshots.get('nonpro').participants.one.lastSubmission.id===11);
+  const participant=instance.snapshots.get('nonpro').participants.one;assert.equal(participant.points,145);assert.equal(participant.resultEvents[0].tone,'failure');assert.equal(participant.resultEvents[0].previousPoints,70);
+});
 
 test('tracker batches standings handles and publishes official partial totals before submission metadata', async t => {
   const calls = [];

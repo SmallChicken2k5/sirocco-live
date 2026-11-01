@@ -1,0 +1,11 @@
+{
+  "manifest_version": 3,
+  "name": "Sirocco Live · VNOJ Companion",
+  "version": "1.6.0",
+  "description": "Gửi kết quả phiên VNOJ của bạn tới Sirocco Live trên cùng máy. Không đọc code hay xuất cookie.",
+  "permissions": ["storage"],
+  "host_permissions": ["http://127.0.0.1:8765/*"],
+  "background": { "service_worker": "background.js" },
+  "action": { "default_popup": "popup.html", "default_title": "Kết nối Sirocco Live" },
+  "content_scripts": [{ "matches": ["https://oj.vnoi.info/contest/*"], "js": ["content.js"] }]
+}

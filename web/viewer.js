@@ -1,14 +1,17 @@
 import { CodePanel } from './editor.js';
 import { $, $$, LANGUAGES, STATUS, esc, time } from './common.js';
 import { renderTileContest } from './contest-ui.js';
+import { ResultEffects } from './result-effects.js';
+import { displayName, resultStyle } from '../lib/results.mjs';
 
 export class BroadcastView {
   constructor(root, state) {
-    this.root=root;this.state=state;this.panels=new Map();this.identity='';this.rotationKey='';this.rotateIndex=0;this.online=true;
+    this.root=root;this.state=state;this.panels=new Map();this.identity='';this.rotationKey='';this.rotateIndex=0;this.online=true;this.effects=new ResultEffects();
     const route=location.pathname.split('/').filter(Boolean);
     this.candidateId=route[1]==='candidate'?route[2]:null;this.group=route[1];
     this.previewMode=new URLSearchParams(location.search).get('preview')==='1';
     if(this.previewMode)window.addEventListener('message',event=>{
+      if(event.origin===location.origin&&event.source===window.parent&&event.data?.type==='sirocco-effect-test'&&event.data.group===this.group){const panel=this.panels.values().next().value,candidate=this.state.config.candidates.find(c=>c.id===panel?.node.dataset.panelId);if(panel&&candidate)this.effects.show(panel,candidate,{...this.previewSettings?.codeforces,sound:false},{tone:event.data.tone==='failure'?'failure':'success',index:'A',label:event.data.tone==='failure'?'WA':'AC'},true);return;}
       if(event.origin!==location.origin||event.source!==window.parent||event.data?.type!=='sirocco-preview'||event.data.group!==this.group)return;
       this.previewSettings=event.data.settings;this.previewTitle=event.data.title;this.render();
     });
@@ -20,13 +23,13 @@ export class BroadcastView {
     const config=this.state.config;if(!config)return;
     const groupId=this.candidateId?config.candidates.find(c=>c.id===this.candidateId)?.group||'nonpro':this.group;
     const g={...config.groups[groupId],...(this.previewMode?this.previewSettings:{})};
-    if(!g.title){this.panels.forEach(p=>p.editor.destroy());this.panels.clear();this.frame=null;this.identity='';clearInterval(this.rotationTimer);this.rotationKey='';this.root.innerHTML='<main class="viewer-empty"><img class="empty-logo" src="/assets/sirocco-symbol.png" alt="Sirocco Team"><h1>Khung phát không còn tồn tại</h1><p>Tạo hoặc chọn một khung trong phòng điều khiển và sao chép link nguồn mới.</p></main>';return;}
+    if(!g.title){this.panels.forEach(p=>{clearTimeout(p.effectTimer);p.editor.destroy();});this.panels.clear();this.frame=null;this.identity='';clearInterval(this.rotationTimer);this.rotationKey='';this.root.innerHTML='<main class="viewer-empty"><img class="empty-logo" src="/assets/sirocco-symbol.png" alt="Sirocco Team"><h1>Khung phát không còn tồn tại</h1><p>Tạo hoặc chọn một khung trong phòng điều khiển và sao chép link nguồn mới.</p></main>';return;}
     const title=this.previewMode&&this.previewTitle?this.previewTitle:config.title;
     const members=config.candidates.filter(c=>c.enabled&&(this.candidateId?c.id===this.candidateId:c.group===groupId));
     const identity=JSON.stringify(members.map(c=>c.id));
     if(identity!==this.identity||!this.frame){
       const restore=new Map([...this.panels].map(([id,p])=>[id,{scroll:p.editor.view.scrollDOM.scrollTop,manualUntil:p.manualUntil}]));
-      this.panels.forEach(p=>p.editor.destroy());this.panels.clear();this.identity=identity;
+      this.panels.forEach(p=>{clearTimeout(p.effectTimer);p.editor.destroy();});this.panels.clear();this.identity=identity;
       this.root.innerHTML=`<main class="broadcast"><header class="broadcast-header"><div><span class="broadcast-mark"><img src="/assets/sirocco-symbol.png" alt="Sirocco Team"></span><strong id="broadcast-title"></strong><span class="broadcast-divider">/</span><span id="broadcast-group"></span></div><div><span class="broadcast-demo hidden">MINH HOẠ</span><span class="broadcast-connection" id="viewer-connection"></span><time id="broadcast-clock"></time></div></header><div class="broadcast-grid">${members.length?members.map((c,i)=>tile(c,i)).join(''):'<div class="viewer-empty"><span class="brand-mark"><img src="/assets/sirocco-symbol.png" alt="Sirocco Team"></span><h1>Chờ thí sinh vào khung hình</h1><p>Thêm link USACO IDE trong phòng điều khiển rồi lưu thay đổi.</p></div>'}</div><div id="connection-warning" class="connection-warning hidden">Mất kết nối với Sirocco Live · đang giữ hình cuối</div></main>`;
       this.frame=$('.broadcast');
       const contestMeta=document.createElement('span');contestMeta.id='broadcast-contest-meta';contestMeta.className='broadcast-contest-meta hidden';$('.broadcast-header>div:last-child').prepend(contestMeta);
@@ -51,9 +54,10 @@ export class BroadcastView {
     document.title=`${title} — ${g.title}`;
     const contest=this.state.contests?.[groupId], contestVisible=g.codeforces?.enabled&&g.codeforces.showOnLive!==false;
     const meta=$('#broadcast-contest-meta');meta.classList.toggle('hidden',!contestVisible);
-    meta.textContent=contestVisible?[contest?.asManager?'QUYỀN QUẢN LÝ':g.codeforces?.provider==='vnoj'?'VNOJ':'CODEFORCES',contest?.contest?.frozen?'BXH ĐÓNG BĂNG':contest?.status==='stale'?'ĐIỂM CŨ':contest?.contest?.type||'CHỜ ĐIỂM'].join(' · '):'';
+    meta.textContent=contestVisible?[contest?.asManager?'QUYỀN QUẢN LÝ':g.codeforces?.provider==='vnoj'?'VNOJ':'CODEFORCES',contest?.contest?.frozen?'BXH ĐÓNG BĂNG':contest?.status==='stale'?'ĐIỂM CŨ':contest?.contest?resultStyle(g.codeforces,contest.contest):'CHỜ ĐIỂM'].join(' · '):'';
     meta.dataset.status=contest?.status||'waiting';meta.title=contest?.checkedAt?`${contest.contest?.name||''} · ${time(contest.checkedAt)}`:'';
-    for(const c of members){this.panel(c,g,this.state.snapshots[c.id]);renderTileContest(this.panels.get(c.id),c,g.codeforces,contest);}
+    for(const c of members){this.panel(c,g,this.state.snapshots[c.id]);const panel=this.panels.get(c.id);renderTileContest(panel,c,g.codeforces,contest);if(g.codeforces?.enabled&&g.codeforces.showOnLive!==false&&contest?.source===g.codeforces.url)this.effects.observe(panel,c,g.codeforces,contest,contest.participants?.[c.id]);}
+    this.audioControl(g.codeforces);
     this.rotation(g,members);this.focus(g,members);this.clock();this.connection(this.online);
   }
   panel(c,g,snapshot) {
@@ -66,7 +70,7 @@ export class BroadcastView {
     p.editor.configure({language:s.language,fontSize:g.fontSize,wrap:g.wrap});
     if(p.code!==code||changed)p.editor.update(code,offset,following,hasCursor);
     Object.assign(p,{code,offset,revision:s.revision,hasCursor,lastMode:g.follow,following});
-    $('.tile-name',p.node).textContent=c.name;
+    $('.tile-name',p.node).textContent=displayName(c);
     const status=$('.tile-status',p.node);status.textContent=STATUS[s.status]||s.status;status.dataset.status=s.status;
     $('.tile-language',p.node).textContent=LANGUAGES[s.language]||'Code';
     const empty=$('.tile-empty',p.node);empty.classList.toggle('hidden',Boolean(code));empty.textContent=s.status==='live'?'File chưa có code':s.message;
@@ -86,6 +90,13 @@ export class BroadcastView {
     const key=JSON.stringify([g.layout,g.rotationSeconds,members.map(c=>c.id)]);if(key===this.rotationKey)return;
     this.rotationKey=key;clearInterval(this.rotationTimer);this.rotateIndex=0;
     if(g.layout==='rotate'&&members.length>1)this.rotationTimer=setInterval(()=>{this.rotateIndex=(this.rotateIndex+1)%members.length;this.focus(g,members);},g.rotationSeconds*1000);
+  }
+  audioControl(settings) {
+    let button=this.root.querySelector('.enable-result-audio');
+    const needed=settings?.sound&&!this.previewMode&&this.effects.audio.context?.state!=='running';
+    if(!needed){button?.remove();return;}
+    if(button)return;
+    button=document.createElement('button');button.className='enable-result-audio';button.textContent='Bật âm thanh kết quả';button.onclick=async()=>{if(await this.effects.audio.enable()){button.remove();this.effects.audio.play('success',settings.volume);}};this.frame.append(button);
   }
   focus(g,members) { const id=g.layout==='rotate'?members[this.rotateIndex%Math.max(1,members.length)]?.id:g.focusId||members[0]?.id;for(const [key,p]of this.panels)p.node.classList.toggle('spotlight',key===id); }
   clock() { const node=$('#broadcast-clock');if(node)node.textContent=time(Date.now()); }

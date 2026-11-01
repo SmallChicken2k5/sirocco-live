@@ -1,4 +1,4 @@
-export const VERSION = '1.5.0';
+export const VERSION = '1.6.0';
 export const icon = name => `<svg class="ui-icon" aria-hidden="true" viewBox="0 0 256 256"><use href="/assets/icons.svg#${name}"></use></svg>`;
 export const LANGUAGES = { auto: 'Tự nhận', cpp: 'C++', py: 'Python', java: 'Java' };
 export const STATUS = { live: 'Đồng bộ', demo: 'Minh hoạ', connecting: 'Đang kết nối', reconnecting: 'Đang nối lại', waiting: 'Chờ link', error: 'Cần kiểm tra', disabled: 'Đang ẩn' };

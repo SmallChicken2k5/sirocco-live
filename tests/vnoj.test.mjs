@@ -79,3 +79,18 @@ test('server publishes VNOJ sessions through normal state and generic refresh, w
   const state = await (await fetch(base + '/api/state')).json(); assert.equal(state.contests.icpc.participants.one.participationId, 502); assert.equal(state.contests.icpc.provider, 'vnoj');
   assert.equal((await fetch(base + '/api/contest/refresh', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ groupId: 'icpc' }) })).status, 200);
 });
+test('paired companion supplies exact lower-score events only to the pinned participant and cannot bypass origin/token checks', async t => {
+  const data=raw();data.contest.format='ioi';data.problems.forEach(p=>p.points=100);
+  const dir=await mkdtemp(path.join(tmpdir(),'sirocco-bridge-'));const app=await createStudio({dataDir:dir,port:0,vnojOptions:{client:{standings:async()=>data}}});
+  t.after(async()=>{await app.close();await rm(dir,{recursive:true,force:true});});const base=`http://127.0.0.1:${app.port}`;
+  const c=config();c.groups.icpc.codeforces.style='IOI';await fetch(base+'/api/config',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(c)});await waitFor(()=>app.contests.get('icpc')?.status==='live');
+  const pair=await(await fetch(base+'/api/vnoj/pair',{method:'POST',headers:{'content-type':'application/json'},body:'{}'})).json();assert.match(pair.token,/^[a-f0-9]{48}$/);
+  const headers={'content-type':'application/json',origin:'chrome-extension://'+'a'.repeat(32),'x-sirocco-pair':pair.token};
+  const payload={contest:reference.id,username:'fixture_user',participationId:502,submissions:[{id:100,index:'A',verdict:'PARTIAL',points:70}]};
+  const send=async(p=payload,h=headers)=>fetch(base+'/api/vnoj/bridge',{method:'POST',headers:h,body:JSON.stringify(p)});
+  assert.equal((await send(payload,{...headers,origin:'https://evil.test'})).status,403);assert.equal((await send(payload,{...headers,'x-sirocco-pair':'wrong'})).status,403);assert.equal((await send({...payload,participationId:999})).status,400);
+  assert.equal((await send()).status,200);await waitFor(()=>app.contests.get('icpc').participants.one.resultMode==='exact');assert.equal(app.contests.get('icpc').participants.one.resultEvents.length,0);
+  payload.submissions.push({id:101,index:'A',verdict:'PARTIAL',points:20});await send();await waitFor(()=>app.contests.get('icpc').participants.one.resultEvents.length===1);
+  const event=app.contests.get('icpc').participants.one.resultEvents[0];assert.equal(event.label,'Giảm điểm');assert.equal(event.tone,'failure');assert.equal(event.previousPoints,70);
+  await fetch(base+'/api/vnoj/unpair',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});assert.equal((await send()).status,403);
+});

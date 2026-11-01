@@ -2,7 +2,7 @@ import http from 'node:http';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, randomBytes, timingSafeEqual } from 'node:crypto';
 import { defaultConfig, normalizeConfig, publicConfig } from './lib/config.mjs';
 import { UsacoReader } from './lib/usaco.mjs';
 import { DemoReader, demoCandidates } from './lib/demo.mjs';
@@ -18,6 +18,7 @@ export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || p
   try { config = normalizeConfig(JSON.parse(await readFile(path.join(dataDir, 'config.json'), 'utf8'))); }
   catch (e) { if (e.code !== 'ENOENT') console.warn('Không đọc được cấu hình đã lưu; dùng cấu hình trống:', e.message); }
   const codeforces = await createCodeforcesConnection(dataDir, codeforcesOptions);
+  let vnojPairToken = randomBytes(24).toString('hex');
   const clients = new Set(), readers = new Map(), snapshots = new Map();
   let writeQueue = Promise.resolve();
   const envelope = (admin = false) => ({ config: admin ? config : publicConfig(config), snapshots: Object.fromEntries(snapshots), contests: Object.fromEntries(contestTracker.snapshots) });
@@ -76,14 +77,28 @@ export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || p
       const localPort = server.address()?.port || port;
       if (![ `127.0.0.1:${localPort}`, `localhost:${localPort}` ].includes(host)) return json(res, 403, { error: 'Chỉ truy cập qua localhost.' });
       const url = new URL(req.url, `http://${host}`);
+      // The optional VNOJ companion can only send result records to this one route.
+      // No cookies, source code, or arbitrary fetch destinations are accepted.
+      if (url.pathname === '/api/vnoj/bridge') {
+        const origin = req.headers.origin || '';
+        if (!/^chrome-extension:\/\/[a-p]{32}$/.test(origin)) return json(res, 403, { error: 'Chỉ nhận từ tiện ích đã ghép nối.' });
+        res.setHeader('Access-Control-Allow-Origin', origin); res.setHeader('Vary', 'Origin');
+        if (req.method === 'OPTIONS') { res.writeHead(204, { 'Access-Control-Allow-Methods': 'POST', 'Access-Control-Allow-Headers': 'content-type,x-sirocco-pair', 'Access-Control-Max-Age': '600' }); return res.end(); }
+        const token = String(req.headers['x-sirocco-pair'] || '');
+        if (req.method !== 'POST' || !/^[a-f0-9]{48}$/.test(token) || !timingSafeEqual(Buffer.from(token), Buffer.from(vnojPairToken))) return json(res, 403, { error: 'Mã ghép nối không hợp lệ.' });
+        const accepted = contestTracker.vnoj.acceptBridge(await body(req));
+        return json(res, accepted ? 200 : 400, accepted ? { ok: true } : { error: 'Chưa có thí sinh ghim đúng username, contest và mã phiên này.' });
+      }
       if (!['GET', 'POST', 'HEAD'].includes(req.method)) return json(res, 405, { error: 'Phương thức không được hỗ trợ.' });
       if (req.method === 'POST') {
         if (req.headers.origin && ![`http://127.0.0.1:${localPort}`, `http://localhost:${localPort}`].includes(req.headers.origin)) return json(res, 403, { error: 'Không chấp nhận yêu cầu từ trang bên ngoài.' });
         if (req.headers['sec-fetch-site'] === 'cross-site') return json(res, 403, { error: 'Không chấp nhận yêu cầu từ trang bên ngoài.' });
       }
-      if (url.pathname === '/api/health') return json(res, 200, { ok: true, name: 'Sirocco Live', version: '1.5.0', port: localPort });
+      if (url.pathname === '/api/health') return json(res, 200, { ok: true, name: 'Sirocco Live', version: '1.6.0', port: localPort });
       if (url.pathname === '/api/state' && req.method === 'GET') return json(res, 200, envelope());
       if (url.pathname === '/api/config' && req.method === 'GET') return json(res, 200, config);
+      if (url.pathname === '/api/vnoj/pair' && req.method === 'POST') { await body(req); return json(res, 200, { token: vnojPairToken }); }
+      if (url.pathname === '/api/vnoj/unpair' && req.method === 'POST') { await body(req); vnojPairToken = randomBytes(24).toString('hex'); contestTracker.vnoj.bridges.clear(); return json(res, 200, { ok: true }); }
       if (url.pathname === '/api/codeforces/connection' && req.method === 'GET') return json(res, 200, codeforces.status());
       if (url.pathname === '/api/codeforces/check' && req.method === 'POST') { const result = await codeforces.check(await body(req)); contestTracker.reconcile(config); return json(res, 200, result); }
       if (url.pathname === '/api/codeforces/disconnect' && req.method === 'POST') { await body(req); const result = await codeforces.disconnect(); contestTracker.reconcile(config); return json(res, 200, result); }

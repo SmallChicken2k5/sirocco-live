@@ -14,6 +14,7 @@ await mkdir(path.join(output,'app','dist'),{recursive:true});
 await mkdir(path.join(output,'runtime'),{recursive:true});
 await mkdir(path.join(output,'licenses'),{recursive:true});
 await cp('dist',path.join(output,'app','dist'),{recursive:true,filter:source=>!source.endsWith('studio-v2.css')});
+await cp('companion',path.join(output,'companion'),{recursive:true});
 await build({entryPoints:['server.mjs'],bundle:true,platform:'node',format:'esm',target:'node22',outfile:path.join(output,'app','server.mjs'),legalComments:'linked',banner:{js:"import { createRequire as __createRequire } from 'node:module'; const require = __createRequire(import.meta.url);"},external:['bufferutil','utf-8-validate']});
 await copyFile(process.execPath,path.join(output,'runtime','node.exe'));
 await copyFile('web/assets/sirocco.ico',path.join(output,'sirocco.ico'));
