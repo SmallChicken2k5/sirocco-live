@@ -92,11 +92,14 @@ export class BroadcastView {
     if(g.layout==='rotate'&&members.length>1)this.rotationTimer=setInterval(()=>{this.rotateIndex=(this.rotateIndex+1)%members.length;this.focus(g,members);},g.rotationSeconds*1000);
   }
   audioControl(settings) {
+    this.audioSettings=settings;
     let button=this.root.querySelector('.enable-result-audio');
-    const needed=settings?.sound&&!this.previewMode&&this.effects.audio.context?.state!=='running';
+    if(!settings?.sound||this.previewMode||!this.frame){button?.remove();return;}
+    const state=this.effects.audio.prepare(()=>this.audioControl(this.audioSettings));
+    const needed=state==='suspended'||state==='interrupted';
     if(!needed){button?.remove();return;}
     if(button)return;
-    button=document.createElement('button');button.className='enable-result-audio';button.textContent='Bật âm thanh kết quả';button.onclick=async()=>{if(await this.effects.audio.enable()){button.remove();this.effects.audio.play('success',settings.volume);}};this.frame.append(button);
+    button=document.createElement('button');button.className='enable-result-audio';button.textContent='Bật âm thanh kết quả';button.title='Trình duyệt đang chặn âm thanh tự động. Bấm một lần để cho phép phát.';button.onclick=async()=>{if(await this.effects.audio.enable()){button.remove();if(this.audioSettings?.sound)this.effects.audio.play('success',this.audioSettings.volume);}};this.frame.append(button);
   }
   focus(g,members) { const id=g.layout==='rotate'?members[this.rotateIndex%Math.max(1,members.length)]?.id:g.focusId||members[0]?.id;for(const [key,p]of this.panels)p.node.classList.toggle('spotlight',key===id); }
   clock() { const node=$('#broadcast-clock');if(node)node.textContent=time(Date.now()); }

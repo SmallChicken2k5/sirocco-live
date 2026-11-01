@@ -18,3 +18,32 @@ test('sound effect uses distinct bounded notes, volume control, and stays silent
   const notes=[],levels=[];class Audio{constructor(){this.state='suspended';this.currentTime=0;this.destination={};}async resume(){this.state='running';}createOscillator(){const n={frequency:{value:0},connect(){},start(){notes.push(n.frequency.value);},stop(){}};return n;}createGain(){return{gain:{setValueAtTime(){},linearRampToValueAtTime(v){levels.push(v);},exponentialRampToValueAtTime(){}},connect(){}};}}
   globalThis.window={AudioContext:Audio};try{const audio=new ResultAudio();audio.play('success',100);assert.equal(notes.length,0);assert.equal(await audio.enable(),true);audio.play('success',50);assert.deepEqual(notes,[523.25,659.25,783.99]);assert.ok(levels.every(v=>v===.08));audio.play('failure',50);assert.deepEqual(notes.slice(-2),[220,164.81]);audio.play('success',0);assert.equal(notes.length,5);}finally{delete globalThis.window;}
 });
+
+test('audio automatically starts when permitted and reports later browser state changes',()=>{
+  let resumes=0,changes=0;
+  class Audio{constructor(){this.state='suspended';}resume(){resumes++;this.state='running';return Promise.resolve();}}
+  globalThis.window={AudioContext:Audio};try{
+    const audio=new ResultAudio();assert.equal(audio.prepare(()=>changes++),'running');
+    assert.equal(audio.prepare(()=>changes++),'running');assert.equal(resumes,1);
+    audio.context.onstatechange();assert.equal(changes,1);
+    audio.context.state='suspended';assert.equal(audio.prepare(()=>changes++),'suspended');assert.equal(resumes,1);
+  }finally{delete globalThis.window;}
+});
+
+test('blocked autoplay never waits or retries on updates; a user click can unlock the same context',async()=>{
+  let resumes=0;
+  class Audio{constructor(){this.state='suspended';}resume(){resumes++;if(resumes===1)return new Promise(()=>{});this.state='running';this.onstatechange();return Promise.resolve();}}
+  globalThis.window={AudioContext:Audio};try{
+    const audio=new ResultAudio();assert.equal(audio.prepare(()=>{}),'suspended');
+    assert.equal(audio.prepare(()=>{}),'suspended');assert.equal(resumes,1);
+    assert.equal(await audio.enable(),true);assert.equal(audio.prepare(()=>{}),'running');assert.equal(resumes,2);
+  }finally{delete globalThis.window;}
+});
+
+test('unavailable or denied audio fails quietly without an unhandled rejection',async()=>{
+  globalThis.window={};try{
+    const audio=new ResultAudio();assert.equal(audio.prepare(()=>{}),'unavailable');assert.equal(await audio.enable(),false);
+    window.AudioContext=class{constructor(){this.state='suspended';}resume(){return Promise.reject(new Error('NotAllowedError'));}};
+    assert.equal(audio.prepare(()=>{}),'suspended');await new Promise(r=>setImmediate(r));assert.equal(await audio.enable(),false);
+  }finally{delete globalThis.window;}
+});

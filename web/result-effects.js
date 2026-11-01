@@ -1,10 +1,28 @@
 import { displayName } from '../lib/results.mjs';
 
 export class ResultAudio {
-  async enable() {
+  getContext() {
+    if (this.context && this.context.state !== 'closed') return this.context;
     const Audio = window.AudioContext || window.webkitAudioContext;
-    if (!Audio) return false;
-    this.context ||= new Audio();
+    if (!Audio) return null;
+    try { this.context = new Audio(); } catch { return null; }
+    this.autoplayAttempted = false;
+    this.context.onstatechange = () => this.onStateChange?.();
+    return this.context;
+  }
+  prepare(onStateChange) {
+    this.onStateChange = onStateChange;
+    const c = this.getContext();
+    if (!c) return 'unavailable';
+    if (c.state !== 'running' && !this.autoplayAttempted) {
+      this.autoplayAttempted = true;
+      // A blocked resume may stay pending until a click; never await it here.
+      try { Promise.resolve(c.resume()).catch(() => {}); } catch {}
+    }
+    return c.state;
+  }
+  async enable() {
+    if (!this.getContext()) return false;
     try { await this.context.resume(); } catch { return false; }
     return this.context.state === 'running';
   }
