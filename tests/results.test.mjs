@@ -1,9 +1,17 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ResultJournal, BoardJournal, classifyResult, problemLabel, resultStyle, displayName } from '../lib/results.mjs';
+import { ResultJournal, BoardJournal, classifyResult, problemLabel, problemTone, resultStyle, displayName } from '../lib/results.mjs';
 import { defaultConfig, normalizeConfig } from '../lib/config.mjs';
 const sub=(id,points,verdict='PARTIAL',index='A')=>({id,points,verdict,index,testing:false});
 const problems=[{index:'A',maxPoints:100},{index:'B',maxPoints:100}];
+
+test('problem colors distinguish partial points, full marks, pending and unsuccessful attempts',()=>{
+  const tone=(points,maxPoints=100,extra={})=>problemTone({points,maxPoints,...extra},{type:'IOI'});
+  assert.equal(tone(40),'partial');assert.equal(tone(99.5),'partial');assert.equal(tone(100),'success');
+  assert.equal(tone(0),'unattempted');assert.equal(tone(0,100,{rejectedAttempts:1}),'failure');
+  assert.equal(tone(40,100,{pending:true}),'pending');assert.equal(tone(50,50),'success');
+  assert.equal(tone(40,0),'partial');assert.equal(problemTone({points:1,maxPoints:1},{type:'ICPC'}),'success');
+});
 test('ICPC shows AC instead of numeric points; IOI preserves scores and real names',()=>{
   assert.equal(problemLabel({points:1},'ICPC'),'AC');assert.equal(problemLabel({points:100},'ICPC'),'AC');assert.equal(problemLabel({points:0,rejectedAttempts:2},'ICPC'),'−2');assert.equal(problemLabel({points:70},'IOI'),'70');
   assert.equal(resultStyle({style:'IOI'},{type:'ICPC'}),'IOI');assert.equal(resultStyle({style:'auto'},{type:'ICPC'}),'ICPC');assert.equal(displayName({name:'nick',realName:'Nguyễn An'}),'Nguyễn An');

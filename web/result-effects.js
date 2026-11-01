@@ -1,4 +1,3 @@
-import { esc } from './common.js';
 import { displayName } from '../lib/results.mjs';
 
 export class ResultAudio {
@@ -36,9 +35,20 @@ export class ResultEffects {
     if (settings.sound) this.audio.play(event.tone,settings.volume);
     if (settings.effects === false && !test) return;
     let overlay = panel.node.querySelector('.result-flash');
-    if (!overlay) { overlay = document.createElement('div'); overlay.className = 'result-flash'; overlay.setAttribute('role','status'); overlay.setAttribute('aria-live','polite'); panel.node.append(overlay); }
+    if (!overlay) {
+      overlay = document.createElement('div'); overlay.className = 'result-flash'; overlay.setAttribute('role','status'); overlay.setAttribute('aria-live','polite');
+      overlay.innerHTML = '<div class="result-flash-edge"></div><div class="result-notice"><span class="result-symbol" aria-hidden="true"></span><span><small></small><strong></strong><em hidden></em></span></div>';
+      panel.node.append(overlay);
+      // Establish the hidden frame once, so the first result also fades in.
+      overlay.getBoundingClientRect();
+    }
     overlay.dataset.tone = event.tone;
-    overlay.innerHTML = `<div class="result-flash-edge"></div><div class="result-notice"><span class="result-symbol" aria-hidden="true">${event.tone === 'success' ? '✓' : '×'}</span><span><small>${test ? 'THỬ HIỆU ỨNG · ' : ''}${esc(displayName(candidate))} · Bài ${esc(event.index)}</small><strong>${esc(event.label)}</strong>${event.label === 'Tăng điểm' || event.label === 'Giảm điểm' ? `<em>${event.previousPoints ?? 0} → ${event.points}</em>` : ''}</span></div>`;
+    overlay.querySelector('.result-symbol').textContent = event.tone === 'success' ? '✓' : '×';
+    overlay.querySelector('small').textContent = `${test ? 'THỬ HIỆU ỨNG · ' : ''}${displayName(candidate)} · Bài ${event.index}`;
+    overlay.querySelector('strong').textContent = event.label;
+    const delta = overlay.querySelector('em');
+    delta.hidden = !['Tăng điểm','Giảm điểm'].includes(event.label);
+    delta.textContent = delta.hidden ? '' : `${event.previousPoints ?? 0} → ${event.points}`;
     overlay.classList.add('visible');
     clearTimeout(panel.effectTimer); panel.effectTimer = setTimeout(()=>overlay.classList.remove('visible'),2600);
   }

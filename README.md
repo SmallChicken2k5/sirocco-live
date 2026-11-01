@@ -30,6 +30,8 @@ Mở [phòng điều khiển](http://127.0.0.1:8765/). Trên Windows, sau lần 
 - Codeforces đọc kết quả từng submission qua API, lọc đúng phiên đã chọn. VNOJ công khai chỉ cho biết điểm tốt nhất và số lần sai; hiệu ứng theo BXH hoạt động với thay đổi thấy được, nhưng không suy ra một lần nộp IOI thấp điểm hơn từ tổng điểm không đổi.
 - **VNOJ Companion** đi kèm trong `companion/vnoj`: ghép nối để đọc kết quả phiên thi ảo đang đăng nhập trên cùng máy và nhận cả lượt thấp điểm hơn. [Hướng dẫn tiện ích](companion/vnoj/README.md). Chưa ghép nối sẽ có nhãn “Theo thay đổi BXH”; đã nối sẽ hiện “Kết quả từng lượt nộp”. Tiện ích chưa hỗ trợ gửi từ máy thí sinh khác đến máy BTC.
 
+- Điểm từng bài trên live: vàng khi đã có điểm nhưng chưa trọn điểm, xanh khi trọn điểm. Dòng kết quả có nhãn **Bản nộp gần nhất** để phân biệt lượt nộp mới với điểm tốt nhất trên BXH; ngưỡng trọn điểm lấy theo contest, mặc định 100 nếu nguồn không cung cấp.
+
 ## VNOJ và phiên thi ảo
 
 - Trong **Điểm thi đấu**, chọn nguồn **VNOJ · ICPC**, bật theo dõi và nhập link `https://oj.vnoi.info/contest/<mã contest>`.

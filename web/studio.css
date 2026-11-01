@@ -113,9 +113,10 @@ html:has(.viewer-page){scrollbar-gutter:auto}.viewer-page{background:#0d141a}.vi
 .tile-contest-problems{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
 .tile-contest-problems>span{display:inline-flex;align-items:center;gap:8px;padding:2px 6px;font:10px/1.35 Consolas,monospace;color:#9baab2;background:#202d35;border:1px solid #3b4b55;border-radius:3px;white-space:nowrap}
 .tile-contest-problems b{font-size:9px;font-weight:500;color:inherit}
-.tile-contest-problems>[data-scored=true]{background:#203b35;border-color:#3e6f60;color:#a3d9bc}
-.tile-contest-problems>[data-rejected=true]{background:#3a2c30;border-color:#72505a;color:#e2a6ad}
-.tile-contest-latest{font:9px/1.4 Consolas,monospace;color:#a9b9bf;text-align:right;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tile-contest-problems>[data-tone=success]{background:#203b35;border-color:#3e6f60;color:#a3d9bc}
+.tile-contest-problems>[data-tone=partial]{background:#3b311e;border-color:#927137;color:#f1cb7e}
+.tile-contest-problems>[data-tone=failure]{background:#3a2c30;border-color:#72505a;color:#e2a6ad}
+.tile-contest-latest{font:9px/1.4 Consolas,monospace;color:#a9b9bf;text-align:right;max-width:260px;white-space:normal;overflow-wrap:anywhere}
 .tile-contest-latest[data-verdict=OK]{color:#9bcdb5}
 .tile-contest-latest[data-verdict=PARTIAL]{color:#dfba7e}
 .tile-contest[data-status=stale]{background:#2b2922;border-bottom-color:#6b5940;border-left-color:#ca9d5e}
