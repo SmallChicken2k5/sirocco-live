@@ -44,7 +44,6 @@ export class CodeforcesSettings {
     if(context.handle)$('#cf-handle',this.dialog).value=context.handle;
     $('#cf-as-manager',this.dialog).checked=context.asManager===true;
     $('#cf-apply-contest',this.dialog).innerHTML=`${icon('arrow-right')} Dùng contest cho ${esc(context.groupTitle||'nhóm hiện tại')}`;
-    if (!matchMedia('(prefers-reduced-motion: reduce)').matches) this.dialog.animate([{ opacity: 0, transform: 'translateY(8px) scale(.99)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(.2,.8,.2,1)' });
     try { this.status(await api('/api/codeforces/connection')); } catch (error) { this.resultError(error.message); }
   }
   status(value) {

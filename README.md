@@ -20,7 +20,16 @@ npm start
 
 Mở [phòng điều khiển](http://127.0.0.1:8765/). Trên Windows, sau lần cài thư viện và build đầu tiên, có thể mở `START.vbs` cho các lần dùng tiếp theo. Bản `.exe` portable là bộ mở tùy chọn cho cùng ứng dụng web.
 
-## Bản 1.3: Thành tích Codeforces trên nguồn live
+## Bản 1.4: Khung phát tuỳ chọn
+
+- Có sẵn ba khung **Không chuyên**, **Chuyên Tin**, **ICPC**. Dùng **Thêm khung** để tạo nguồn theo tên tuỳ chọn; mỗi nguồn giữ bố cục, cỡ chữ và contest riêng.
+- Nút quản lý cạnh tên khung cho phép đổi tên hoặc xoá. Đổi tên giữ nguyên link Browser Source. Khi xoá khung có thí sinh, chọn khung đích để giữ toàn bộ tên, link USACO và handle. Có tối đa 12 khung và 16 thí sinh trong một phiên.
+- Cấu hình 1.3 được chuyển sang phiên bản 2 và thêm ICPC một lần. Các nguồn đã xoá sẽ không tự xuất hiện lại. Xuất/nhập cấu hình giữ các khung tuỳ chọn.
+- Giao diện quản trị dùng nền trung tính, chữ sáng và thanh bên bám đầy chiều cao màn hình khi cuộn. Thanh điều hướng đưa tới nguồn phát, thí sinh, điểm và cấu hình. Lưu các thiết lập hình ảnh giữ nguyên iframe xem trước.
+- Bảng điểm trên live có nền sáng, tổng điểm vàng cát và điểm từng bài tương phản cao. Code và Input dùng nền tối riêng. Bố cục tự tính số cột/hàng theo số thí sinh.
+- Hoạt ảnh theo hướng dẫn Animate UI cho CSS: phản hồi nút, chuyển khung, mở/đóng dialog và đổi điểm. Dùng các curve/timing theo vai trò, tôn trọng `prefers-reduced-motion`; giữ native dialog cho quản lý focus và Escape. Dùng tween CSS thay cho spring React; không thêm React hoặc gói Animate UI vào ứng dụng JavaScript thuần.
+
+### Thành tích Codeforces trên nguồn live
 
 - Gắn contest riêng cho mỗi nhóm và handle riêng cho mỗi thí sinh. Nguồn live hiển thị tổng điểm chính thức, điểm từng bài, thứ hạng khi có và kết quả lần nộp gần nhất.
 - Gym dùng API Key/Secret của tài khoản có quyền xem contest. Có lựa chọn phiên thi chính thức, thi ảo, quản lý hoặc luyện tập để tránh ghép nhầm kết quả.
@@ -60,6 +69,7 @@ Trên máy đã cài Node.js 22 trở lên, mở **START.vbs** bằng cách nh�
 - Phòng điều khiển: <http://127.0.0.1:8765/>
 - Nguồn không chuyên: <http://127.0.0.1:8765/view/nonpro>
 - Nguồn chuyên Tin: <http://127.0.0.1:8765/view/pro>
+- Nguồn ICPC: <http://127.0.0.1:8765/view/icpc>
 
 Sau lần cài đặt và build đầu tiên, không cần chạy lệnh khi sử dụng hằng ngày trên Windows. START.vbs tái sử dụng phiên đang chạy; máy chủ chạy ẩn. Dùng STOP.cmd khi muốn tắt nguồn. Tắt tab trình duyệt không tắt máy chủ.
 

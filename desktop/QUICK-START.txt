@@ -1,4 +1,4 @@
-SIROCCO LIVE 1.3
+SIROCCO LIVE 1.4
 Sirocco Team · Windows x64 portable
 
 1. Giải nén TOÀN BỘ thư mục ZIP vào một thư mục riêng.
@@ -10,6 +10,13 @@ Sirocco Team · Windows x64 portable
 Phòng điều khiển: http://127.0.0.1:8765/
 Không chuyên:    http://127.0.0.1:8765/view/nonpro
 Chuyên Tin:      http://127.0.0.1:8765/view/pro
+ICPC:           http://127.0.0.1:8765/view/icpc
+
+KHUNG PHÁT TUỲ CHỌN
+Bấm "Thêm khung", nhập tên, rồi dùng link nguồn riêng của khung.
+Nút quản lý cạnh tên khung cho phép đổi tên hoặc xoá; đổi tên giữ nguyên URL.
+Khi xoá khung có thí sinh, chọn khung nhận để giữ tên, link và handle của các bạn.
+Có tối đa 12 khung và 16 thí sinh trong một phiên.
 
 THÀNH TÍCH CODEFORCES
 Mỗi nhóm có thể dùng một contest riêng. Bật "Thành tích Codeforces", nhập link contest,

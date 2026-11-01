@@ -37,15 +37,15 @@ const colors = HighlightStyle.define([
   { tag: tags.operator, color: '#b8c2ce' }
 ]);
 const baseTheme = EditorView.theme({
-  '&': { height: '100%', backgroundColor: '#0b1a27', color: '#e0e8ef' },
+  '&': { height: '100%', backgroundColor: '#141b26', color: '#e7edf6' },
   '.cm-scroller': { fontFamily: 'Consolas, "Cascadia Code", "Courier New", monospace', lineHeight: '1.43', overflow: 'auto' },
   '.cm-content': { padding: '9px 0 28px', caretColor: 'transparent' },
   '.cm-line': { padding: '0 10px 0 6px' },
-  '.cm-gutters': { backgroundColor: '#0b1a27', color: '#678397', border: 'none', minWidth: '2.8em' },
+  '.cm-gutters': { backgroundColor: '#141b26', color: '#9aa9bd', border: 'none', minWidth: '2.8em' },
   '.cm-lineNumbers .cm-gutterElement': { padding: '0 9px 0 6px' },
   '.cm-selectionBackground': { background: '#244959 !important' },
   '&.cm-focused': { outline: 'none' },
-  '.code-current-line': { backgroundColor: '#39b8ca0c', boxShadow: 'inset 2px 0 #39b8ca' }
+  '.code-current-line': { backgroundColor: '#efbb6d0a', boxShadow: 'inset 2px 0 #efbb6d' }
 }, { dark: true });
 
 export class CodePanel {

@@ -28,6 +28,19 @@ test('tracker batches standings handles and publishes official partial totals be
   assert.equal(instance.snapshots.get('nonpro').asManager, false);
 });
 
+test('removing a custom source aborts its in-flight requests and discards its snapshots',async t=>{
+  let release,signal;const {instance}=tracker(t,connection({standings:async(_c,o)=>{signal=o.signal;return new Promise(r=>{release=r;});}}));
+  const c=config();c.groups.custom=c.groups.nonpro;c.groups.nonpro={...c.groups.nonpro,codeforces:{enabled:false}};c.candidates[0].group='custom';instance.reconcile(c);
+  await waitFor(()=>Boolean(release));delete c.groups.custom;c.candidates[0].group='icpc';instance.reconcile(c);assert.equal(signal.aborted,true);assert.equal(instance.snapshots.has('custom'),false);assert.equal(instance.entries.has('custom'),false);
+  release(raw());await new Promise(r=>setTimeout(r,10));assert.equal(instance.snapshots.has('custom'),false);
+});
+test('refresh keeps matching submission metadata visible while fetching the new verdict',async t=>{
+  let release,hold=false;const {instance,updates}=tracker(t,connection({submissions:async()=>hold?new Promise(r=>{release=r;}):[submission(10)]}));
+  instance.reconcile(config());await waitFor(()=>finished(instance));hold=true;instance.refresh('nonpro');await waitFor(()=>Boolean(release));
+  assert.equal(instance.snapshots.get('nonpro').participants.one.lastSubmission.id,10);assert.equal(updates.at(-1).fetching,true);
+  release([submission(11)]);await waitFor(()=>finished(instance));assert.equal(instance.snapshots.get('nonpro').participants.one.lastSubmission.id,11);
+});
+
 test('unranked manager data requires explicit manager mode and stays unranked', async t => {
   let sawManager;
   const { instance } = tracker(t, connection({ standings: async (_c, o) => { sawManager = o.asManager; return raw([row('fixture_user', 200, 'MANAGER')]); }, submissions: async () => [submission(10, 'fixture_user', 'MANAGER', 100)] }));

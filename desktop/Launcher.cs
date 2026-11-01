@@ -10,8 +10,8 @@ using System.Windows.Forms;
 [assembly: System.Reflection.AssemblyDescription("Sirocco Team broadcast studio")]
 [assembly: System.Reflection.AssemblyCompany("Sirocco Team")]
 [assembly: System.Reflection.AssemblyProduct("Sirocco Live")]
-[assembly: System.Reflection.AssemblyVersion("1.3.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("1.3.0.0")]
+[assembly: System.Reflection.AssemblyVersion("1.4.0.0")]
+[assembly: System.Reflection.AssemblyFileVersion("1.4.0.0")]
 
 namespace SiroccoLive {
     internal static class Program {
@@ -98,11 +98,12 @@ namespace SiroccoLive {
         }
         private bool Healthy() { try{return Get("/api/health").Contains("\"name\":\"Sirocco Live\"");}catch{return false;} }
         internal void Verify() {
-            if(!Get("/api/health").Contains("\"version\":\"1.3.0\"")) throw new Exception("Unexpected server version");
+            if(!Get("/api/health").Contains("\"version\":\"1.4.0\"")) throw new Exception("Unexpected server version");
             if(!Get("/").Contains("sirocco-favicon.png")) throw new Exception("Missing branded UI");
             if(!Get("/api/state").Contains("snapshots")) throw new Exception("Missing studio state");
             if(!Get("/view/pro").Contains("studio.css")) throw new Exception("Missing broadcast route");
             if(!Get("/view/nonpro").Contains("studio.css")) throw new Exception("Missing nonpro broadcast route");
+            if(!Get("/view/icpc").Contains("studio.css")) throw new Exception("Missing ICPC broadcast route");
             Get("/assets/sirocco-favicon.png"); Get("/assets/icons.svg");
         }
         internal void ShowTray() {
@@ -110,6 +111,7 @@ namespace SiroccoLive {
             menu.Items.Add("Mở phòng điều khiển",null,(s,e)=>Program.Open(Url+"/"));
             menu.Items.Add("Nguồn Không chuyên",null,(s,e)=>Program.Open(Url+"/view/nonpro"));
             menu.Items.Add("Nguồn Chuyên Tin",null,(s,e)=>Program.Open(Url+"/view/pro"));
+            menu.Items.Add("Nguồn ICPC",null,(s,e)=>Program.Open(Url+"/view/icpc"));
             menu.Items.Add(new ToolStripSeparator());
             menu.Items.Add("Mở thư mục nhật ký",null,(s,e)=>Process.Start("explorer.exe","\""+Path.GetFullPath(logFolder)+"\""));
             menu.Items.Add(new ToolStripSeparator());

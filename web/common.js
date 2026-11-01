@@ -1,5 +1,4 @@
-export const GROUPS = { nonpro: 'Không chuyên', pro: 'Chuyên Tin' };
-export const VERSION = '1.3.0';
+export const VERSION = '1.4.0';
 export const icon = name => `<svg class="ui-icon" aria-hidden="true" viewBox="0 0 256 256"><use href="/assets/icons.svg#${name}"></use></svg>`;
 export const LANGUAGES = { auto: 'Tự nhận', cpp: 'C++', py: 'Python', java: 'Java' };
 export const STATUS = { live: 'Đồng bộ', demo: 'Minh hoạ', connecting: 'Đang kết nối', reconnecting: 'Đang nối lại', waiting: 'Chờ link', error: 'Cần kiểm tra', disabled: 'Đang ẩn' };
@@ -25,4 +24,4 @@ export async function copy(value) {
   try { await navigator.clipboard.writeText(value); toast('Đã sao chép link nguồn phát.'); }
   catch { toast(value); }
 }
-export const options = (items, selected) => items.map(([value, title]) => `<option value="${value}" ${selected === value ? 'selected' : ''}>${esc(title)}</option>`).join('');
+export const options = (items, selected) => items.map(([value, title]) => `<option value="${esc(value)}" ${String(selected) === String(value) ? 'selected' : ''}>${esc(title)}</option>`).join('');

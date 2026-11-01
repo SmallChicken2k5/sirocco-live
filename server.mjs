@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { readFile, writeFile, mkdir, rename } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import { defaultConfig, normalizeConfig, publicConfig, GROUP_IDS } from './lib/config.mjs';
+import { defaultConfig, normalizeConfig, publicConfig } from './lib/config.mjs';
 import { UsacoReader } from './lib/usaco.mjs';
 import { DemoReader, demoCandidates } from './lib/demo.mjs';
 import { createCodeforcesConnection } from './lib/codeforces-connection.mjs';
@@ -81,13 +81,13 @@ export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || p
         if (req.headers.origin && ![`http://127.0.0.1:${localPort}`, `http://localhost:${localPort}`].includes(req.headers.origin)) return json(res, 403, { error: 'Không chấp nhận yêu cầu từ trang bên ngoài.' });
         if (req.headers['sec-fetch-site'] === 'cross-site') return json(res, 403, { error: 'Không chấp nhận yêu cầu từ trang bên ngoài.' });
       }
-      if (url.pathname === '/api/health') return json(res, 200, { ok: true, name: 'Sirocco Live', version: '1.3.0', port: localPort });
+      if (url.pathname === '/api/health') return json(res, 200, { ok: true, name: 'Sirocco Live', version: '1.4.0', port: localPort });
       if (url.pathname === '/api/state' && req.method === 'GET') return json(res, 200, envelope());
       if (url.pathname === '/api/config' && req.method === 'GET') return json(res, 200, config);
       if (url.pathname === '/api/codeforces/connection' && req.method === 'GET') return json(res, 200, codeforces.status());
       if (url.pathname === '/api/codeforces/check' && req.method === 'POST') { const result = await codeforces.check(await body(req)); contestTracker.reconcile(config); return json(res, 200, result); }
       if (url.pathname === '/api/codeforces/disconnect' && req.method === 'POST') { await body(req); const result = await codeforces.disconnect(); contestTracker.reconcile(config); return json(res, 200, result); }
-      if (url.pathname === '/api/codeforces/refresh' && req.method === 'POST') { const { groupId } = await body(req); if (!GROUP_IDS.includes(groupId) || !contestTracker.refresh(groupId)) return json(res, 400, { error: 'Bật contest, kết nối API và nhập handle trước khi cập nhật.' }); return json(res, 200, { ok: true }); }
+      if (url.pathname === '/api/codeforces/refresh' && req.method === 'POST') { const { groupId } = await body(req); if (!Object.hasOwn(config.groups, groupId) || !contestTracker.refresh(groupId)) return json(res, 400, { error: 'Bật contest, kết nối API và nhập handle trước khi cập nhật.' }); return json(res, 200, { ok: true }); }
       if (url.pathname === '/api/export' && req.method === 'GET') return json(res, 200, config, { 'Content-Disposition': 'attachment; filename="sirocco-live-config.json"' });
       if (url.pathname === '/api/config' && req.method === 'POST') {
         const next = normalizeConfig(await body(req));
@@ -122,7 +122,7 @@ export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || p
       }
       if (url.pathname.startsWith('/api/')) return json(res, 404, { error: 'Không tìm thấy API.' });
       let filename;
-      if (['/', '/index.html', '/view/nonpro', '/view/pro'].includes(url.pathname) || /^\/view\/candidate\/[a-zA-Z0-9_-]+$/.test(url.pathname)) filename = 'index.html';
+      if (['/', '/index.html'].includes(url.pathname) || /^\/view\/[a-z][a-z0-9_-]{0,47}$/.test(url.pathname) || /^\/view\/candidate\/[a-zA-Z0-9_-]+$/.test(url.pathname)) filename = 'index.html';
       else if (['/app.js', '/style.css', '/studio.css', '/app.js.LEGAL.txt'].includes(url.pathname)) filename = url.pathname.slice(1);
       else if (/^\/assets\/(sirocco-(symbol|favicon|original)\.png|icons\.svg|geist-(vietnamese|latin-ext|latin)\.woff2)$/.test(url.pathname)) filename = url.pathname.slice(1);
       else if (url.pathname === '/favicon.ico') filename = 'assets/sirocco-favicon.png';
@@ -148,7 +148,7 @@ export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || p
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   createStudio().then(studio => {
     console.log(`Sirocco Live đang chạy: http://127.0.0.1:${studio.port}`);
-    console.log('Nguồn không chuyên: /view/nonpro · Nguồn chuyên Tin: /view/pro');
+    console.log('Nguồn mặc định: /view/nonpro · /view/pro · /view/icpc. Thêm khung tuỳ chọn trong phòng điều khiển.');
     const stop = async () => { await studio.close(); process.exit(0); };
     process.on('SIGINT', stop); process.on('SIGTERM', stop);
   }).catch(e => { console.error(e.code === 'EADDRINUSE' ? 'Cổng đang được dùng. Mở Sirocco Live đang chạy hoặc đổi biến PORT.' : e.message); process.exitCode = 1; });

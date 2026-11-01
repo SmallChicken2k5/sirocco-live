@@ -6,12 +6,12 @@ import path from 'node:path';
 import { createStudio } from '../server.mjs';
 import { defaultConfig } from '../lib/config.mjs';
 
-test('local API saves configuration, serves two viewer routes and blocks external mutations',async t=>{
+test('local API saves configuration, serves built-in viewer routes and blocks external mutations',async t=>{
   const dataDir=await mkdtemp(path.join(tmpdir(),'sirocco-test-'));
   let studio=await createStudio({dataDir,port:0});
   t.after(async()=>{await studio.close();await rm(dataDir,{recursive:true,force:true});});
   const base=()=>`http://127.0.0.1:${studio.port}`;
-  for(const route of ['/','/view/nonpro','/view/pro','/app.js','/style.css','/studio.css','/assets/sirocco-symbol.png','/assets/icons.svg','/assets/geist-vietnamese.woff2'])assert.equal((await fetch(base()+route)).status,200);
+  for(const route of ['/','/view/nonpro','/view/pro','/view/icpc','/app.js','/style.css','/studio.css','/assets/sirocco-symbol.png','/assets/icons.svg','/assets/geist-vietnamese.woff2'])assert.equal((await fetch(base()+route)).status,200);
   assert.equal((await fetch(base()+'/favicon.ico')).headers.get('content-type'),'image/png');
   assert.equal((await fetch(base()+'/assets/../package.json')).status,404);
   const config=defaultConfig();config.candidates=[{id:'an',name:'An',url:'',group:'nonpro',language:'cpp',enabled:true}];
@@ -24,6 +24,18 @@ test('local API saves configuration, serves two viewer routes and blocks externa
   await studio.close();studio=await createStudio({dataDir,port:0});
   assert.equal(studio.config.candidates[0].name,'An');
   const state=await(await fetch(base()+'/api/state')).json();assert.equal(state.config.candidates[0].url,undefined);assert.equal(state.snapshots.an.status,'waiting');
+});
+
+test('custom source membership, title and settings persist through restart and deletion',async t=>{
+  const dataDir=await mkdtemp(path.join(tmpdir(),'sirocco-sources-'));let studio=await createStudio({dataDir,port:0});
+  t.after(async()=>{await studio.close();await rm(dataDir,{recursive:true,force:true});});
+  const post=config=>fetch(`http://127.0.0.1:${studio.port}/api/config`,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(config)});
+  const config=defaultConfig();config.groups['icpc-bang-a']={...config.groups.icpc,title:'ICPC · Bảng A',fontSize:12};config.candidates=[{id:'fixture',name:'Fixture',group:'icpc-bang-a',url:''}];
+  assert.equal((await post(config)).status,200);await studio.close();studio=await createStudio({dataDir,port:0});
+  assert.equal(studio.config.groups['icpc-bang-a'].title,'ICPC · Bảng A');assert.equal(studio.config.candidates[0].group,'icpc-bang-a');
+  assert.equal((await fetch(`http://127.0.0.1:${studio.port}/view/icpc-bang-a`)).status,200);
+  const next=structuredClone(studio.config);next.candidates[0].group='icpc';delete next.groups['icpc-bang-a'];assert.equal((await post(next)).status,200);
+  const state=await(await fetch(`http://127.0.0.1:${studio.port}/api/state`)).json();assert.equal(state.config.groups['icpc-bang-a'],undefined);assert.equal(state.contests['icpc-bang-a'],undefined);assert.equal(state.config.candidates[0].group,'icpc');assert.equal(state.snapshots.fixture.status,'waiting');
 });
 test('demo provides six explicit demo snapshots, split four plus two, without USACO writes',async t=>{
   const dataDir=await mkdtemp(path.join(tmpdir(),'sirocco-demo-'));

@@ -20,7 +20,7 @@ export class BroadcastView {
     const config=this.state.config;if(!config)return;
     const groupId=this.candidateId?config.candidates.find(c=>c.id===this.candidateId)?.group||'nonpro':this.group;
     const g={...config.groups[groupId],...(this.previewMode?this.previewSettings:{})};
-    if(!g.title){this.root.innerHTML='<div class="viewer-empty">Không tìm thấy nhóm.</div>';return;}
+    if(!g.title){this.panels.forEach(p=>p.editor.destroy());this.panels.clear();this.frame=null;this.identity='';clearInterval(this.rotationTimer);this.rotationKey='';this.root.innerHTML='<main class="viewer-empty"><img class="empty-logo" src="/assets/sirocco-symbol.png" alt="Sirocco Team"><h1>Khung phát không còn tồn tại</h1><p>Tạo hoặc chọn một khung trong phòng điều khiển và sao chép link nguồn mới.</p></main>';return;}
     const title=this.previewMode&&this.previewTitle?this.previewTitle:config.title;
     const members=config.candidates.filter(c=>c.enabled&&(this.candidateId?c.id===this.candidateId:c.group===groupId));
     const identity=JSON.stringify(members.map(c=>c.id));
@@ -40,6 +40,10 @@ export class BroadcastView {
       });
     }
     this.frame.dataset.layout=this.candidateId?'columns':g.layout;this.frame.dataset.count=members.length;
+    const count=members.length, featured=['spotlight','rotate'].includes(g.layout)&&!this.candidateId;
+    const columns=featured?(count>1?2:1):this.candidateId?1:g.layout==='columns'?Math.max(1,Math.min(count,4)):count<=4?Math.min(2,count)||1:count<=9?3:4;
+    $('.broadcast-grid').style.gridTemplateColumns=featured&&count>1?'minmax(0,2fr) minmax(0,1fr)':`repeat(${columns},minmax(0,1fr))`;
+    $('.broadcast-grid').style.gridTemplateRows=`repeat(${featured?Math.max(1,count-1):Math.max(1,Math.ceil(count/columns))},minmax(0,1fr))`;
     this.frame.dataset.showInput=String(g.showInput!==false);this.frame.dataset.inputPosition=g.inputPosition||'right';
     this.frame.style.setProperty('--code-font-size',`${g.fontSize}px`);this.frame.style.setProperty('--input-font-size',`${Math.max(11,Math.min(16,g.fontSize-3))}px`);
     this.frame.classList.toggle('no-header',!g.showHeader);
