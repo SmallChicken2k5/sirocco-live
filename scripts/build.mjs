@@ -7,7 +7,7 @@ for (const file of ['index.html', 'style.css', 'studio.css']) await copyFile(`we
 await mkdir('dist/assets', { recursive: true });
 for(const file of ['sirocco-symbol.png','sirocco-favicon.png','sirocco-original.png'])await copyFile(`web/assets/${file}`,`dist/assets/${file}`);
 for(const subset of ['vietnamese','latin-ext','latin'])await copyFile(`node_modules/@fontsource-variable/geist/files/geist-${subset}-wght-normal.woff2`,`dist/assets/geist-${subset}.woff2`);
-const names=['broadcast','squares-four','columns','sidebar-simple','arrows-clockwise','sliders-horizontal','arrows-out','question','users','plus','copy','link','check','star','trash','circle-notch'];
+const names=['broadcast','squares-four','columns','sidebar-simple','arrows-clockwise','sliders-horizontal','arrows-out','question','users','plus','copy','link','check','star','trash','circle-notch','x','chart-line','plugs-connected','arrow-up-right','check-circle','arrow-right','key'];
 const symbols=await Promise.all(names.map(async name=>{
   const svg=await readFile(`node_modules/@phosphor-icons/core/assets/regular/${name}.svg`,'utf8');
   return `<symbol id="${name}" viewBox="0 0 256 256">${svg.replace(/^<svg[^>]*>/,'').replace(/<\/svg>\s*$/,'')}</symbol>`;

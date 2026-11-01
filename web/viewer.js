@@ -1,5 +1,6 @@
 import { CodePanel } from './editor.js';
 import { $, $$, LANGUAGES, STATUS, esc, time } from './common.js';
+import { renderTileContest } from './contest-ui.js';
 
 export class BroadcastView {
   constructor(root, state) {
@@ -28,6 +29,7 @@ export class BroadcastView {
       this.panels.forEach(p=>p.editor.destroy());this.panels.clear();this.identity=identity;
       this.root.innerHTML=`<main class="broadcast"><header class="broadcast-header"><div><span class="broadcast-mark"><img src="/assets/sirocco-symbol.png" alt="Sirocco Team"></span><strong id="broadcast-title"></strong><span class="broadcast-divider">/</span><span id="broadcast-group"></span></div><div><span class="broadcast-demo hidden">MINH HOẠ</span><span class="broadcast-connection" id="viewer-connection"></span><time id="broadcast-clock"></time></div></header><div class="broadcast-grid">${members.length?members.map((c,i)=>tile(c,i)).join(''):'<div class="viewer-empty"><span class="brand-mark"><img src="/assets/sirocco-symbol.png" alt="Sirocco Team"></span><h1>Chờ thí sinh vào khung hình</h1><p>Thêm link USACO IDE trong phòng điều khiển rồi lưu thay đổi.</p></div>'}</div><div id="connection-warning" class="connection-warning hidden">Mất kết nối với Sirocco Live · đang giữ hình cuối</div></main>`;
       this.frame=$('.broadcast');
+      const contestMeta=document.createElement('span');contestMeta.id='broadcast-contest-meta';contestMeta.className='broadcast-contest-meta hidden';$('.broadcast-header>div:last-child').prepend(contestMeta);
       $$('.code-tile').forEach(node=>{
         const parent=$('.code-container',node),previous=restore.get(node.dataset.panelId);
         const editor=new CodePanel(parent,{fontSize:g.fontSize,wrap:g.wrap});
@@ -43,7 +45,11 @@ export class BroadcastView {
     this.frame.classList.toggle('no-header',!g.showHeader);
     $('#broadcast-title').textContent=title;$('#broadcast-group').textContent=g.title;$('.broadcast-demo').classList.toggle('hidden',!config.demo);
     document.title=`${title} — ${g.title}`;
-    for(const c of members)this.panel(c,g,this.state.snapshots[c.id]);
+    const contest=this.state.contests?.[groupId], contestVisible=g.codeforces?.enabled&&g.codeforces.showOnLive!==false;
+    const meta=$('#broadcast-contest-meta');meta.classList.toggle('hidden',!contestVisible);
+    meta.textContent=contestVisible?[contest?.asManager?'QUYỀN QUẢN LÝ':'CODEFORCES',contest?.contest?.frozen?'BXH ĐÓNG BĂNG':contest?.status==='stale'?'ĐIỂM CŨ':contest?.contest?.type||'CHỜ ĐIỂM'].join(' · '):'';
+    meta.dataset.status=contest?.status||'waiting';meta.title=contest?.checkedAt?`${contest.contest?.name||''} · ${time(contest.checkedAt)}`:'';
+    for(const c of members){this.panel(c,g,this.state.snapshots[c.id]);renderTileContest(this.panels.get(c.id),c,g.codeforces,contest);}
     this.rotation(g,members);this.focus(g,members);this.clock();this.connection(this.online);
   }
   panel(c,g,snapshot) {
@@ -82,5 +88,10 @@ export class BroadcastView {
   connection(online) { this.online=online;$('#connection-warning')?.classList.toggle('hidden',online);const node=$('#viewer-connection');if(node)node.textContent=online?'CODE + INPUT · CHỈ ĐỌC':'MẤT KẾT NỐI'; }
 }
 function tile(c,i) {
-  return `<section class="code-tile" data-panel-id="${c.id}"><header class="code-tile-header"><div><span class="tile-number">${String(i+1).padStart(2,'0')}</span><h2 class="tile-name">${esc(c.name)}</h2></div><div><span class="tile-language"></span><span class="tile-status"></span></div></header><div class="tile-workspace"><div class="tile-code-area"><div class="code-container"></div><div class="tile-empty"></div></div><aside class="tile-input" aria-label="Input của ${esc(c.name)}"><header><span><i class="input-status"></i>INPUT</span><span class="input-line-count"></span></header><div class="input-content"><pre class="tile-input-text" tabindex="0" aria-label="Nội dung Input của ${esc(c.name)}"></pre><span class="input-empty"></span></div><footer class="input-time"></footer></aside></div><footer class="code-tile-footer"><span class="tile-follow"></span><span class="tile-update"></span></footer></section>`;
+  return `<section class="code-tile" data-panel-id="${c.id}">
+    <header class="code-tile-header"><div><span class="tile-number">${String(i+1).padStart(2,'0')}</span><h2 class="tile-name">${esc(c.name)}</h2></div><div><span class="tile-language"></span><span class="tile-status"></span></div></header>
+    <div class="tile-contest hidden" aria-label="Thành tích Codeforces của ${esc(c.name)}"></div>
+    <div class="tile-workspace"><div class="tile-code-area"><div class="code-container"></div><div class="tile-empty"></div></div><aside class="tile-input" aria-label="Input của ${esc(c.name)}"><header><span><i class="input-status"></i>INPUT</span><span class="input-line-count"></span></header><div class="input-content"><pre class="tile-input-text" tabindex="0" aria-label="Nội dung Input của ${esc(c.name)}"></pre><span class="input-empty"></span></div><footer class="input-time"></footer></aside></div>
+    <footer class="code-tile-footer"><span class="tile-follow"></span><span class="tile-update"></span></footer>
+  </section>`;
 }

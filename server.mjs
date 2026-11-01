@@ -6,18 +6,21 @@ import { randomUUID } from 'node:crypto';
 import { defaultConfig, normalizeConfig, publicConfig, GROUP_IDS } from './lib/config.mjs';
 import { UsacoReader } from './lib/usaco.mjs';
 import { DemoReader, demoCandidates } from './lib/demo.mjs';
+import { createCodeforcesConnection } from './lib/codeforces-connection.mjs';
+import { CodeforcesTracker } from './lib/codeforces-tracker.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.txt': 'text/plain; charset=utf-8', '.svg':'image/svg+xml', '.png':'image/png', '.ico':'image/x-icon', '.woff2':'font/woff2' };
 const MAX_BODY = 1024 * 1024;
-export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || path.join(ROOT, 'data'), port = Number(process.env.PORT || 8765), readerOptions } = {}) {
+export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || path.join(ROOT, 'data'), port = Number(process.env.PORT || 8765), readerOptions, codeforcesOptions } = {}) {
   await mkdir(dataDir, { recursive: true });
   let config = defaultConfig();
   try { config = normalizeConfig(JSON.parse(await readFile(path.join(dataDir, 'config.json'), 'utf8'))); }
   catch (e) { if (e.code !== 'ENOENT') console.warn('Không đọc được cấu hình đã lưu; dùng cấu hình trống:', e.message); }
+  const codeforces = await createCodeforcesConnection(dataDir, codeforcesOptions);
   const clients = new Set(), readers = new Map(), snapshots = new Map();
   let writeQueue = Promise.resolve();
-  const envelope = (admin = false) => ({ config: admin ? config : publicConfig(config), snapshots: Object.fromEntries(snapshots) });
+  const envelope = (admin = false) => ({ config: admin ? config : publicConfig(config), snapshots: Object.fromEntries(snapshots), contests: Object.fromEntries(contestTracker.snapshots) });
   const send = (client, event, data) => {
     if (!client.res.destroyed && !client.res.writableEnded) {
       // A stalled local viewer must not retain unlimited code snapshots.
@@ -26,6 +29,7 @@ export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || p
     }
   };
   const broadcast = (event, data) => { for (const client of clients) send(client, event, data); };
+  const contestTracker = new CodeforcesTracker(codeforces, snapshot => broadcast('contest', snapshot));
   const onChange = snapshot => { snapshots.set(snapshot.id, snapshot); broadcast('candidate', snapshot); };
   function reconcile() {
     for (const [id, entry] of readers) {
@@ -45,6 +49,7 @@ export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || p
     }
     const activeIds = new Set(config.candidates.filter(c => c.enabled).map(c => c.id));
     for (const id of snapshots.keys()) if (!activeIds.has(id)) snapshots.delete(id);
+    contestTracker.reconcile(config);
   }
   const persist = next => {
     const task = writeQueue.then(async () => {
@@ -76,9 +81,13 @@ export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || p
         if (req.headers.origin && ![`http://127.0.0.1:${localPort}`, `http://localhost:${localPort}`].includes(req.headers.origin)) return json(res, 403, { error: 'Không chấp nhận yêu cầu từ trang bên ngoài.' });
         if (req.headers['sec-fetch-site'] === 'cross-site') return json(res, 403, { error: 'Không chấp nhận yêu cầu từ trang bên ngoài.' });
       }
-      if (url.pathname === '/api/health') return json(res, 200, { ok: true, name: 'Sirocco Live', version: '1.2.0', port: localPort });
+      if (url.pathname === '/api/health') return json(res, 200, { ok: true, name: 'Sirocco Live', version: '1.3.0', port: localPort });
       if (url.pathname === '/api/state' && req.method === 'GET') return json(res, 200, envelope());
       if (url.pathname === '/api/config' && req.method === 'GET') return json(res, 200, config);
+      if (url.pathname === '/api/codeforces/connection' && req.method === 'GET') return json(res, 200, codeforces.status());
+      if (url.pathname === '/api/codeforces/check' && req.method === 'POST') { const result = await codeforces.check(await body(req)); contestTracker.reconcile(config); return json(res, 200, result); }
+      if (url.pathname === '/api/codeforces/disconnect' && req.method === 'POST') { await body(req); const result = await codeforces.disconnect(); contestTracker.reconcile(config); return json(res, 200, result); }
+      if (url.pathname === '/api/codeforces/refresh' && req.method === 'POST') { const { groupId } = await body(req); if (!GROUP_IDS.includes(groupId) || !contestTracker.refresh(groupId)) return json(res, 400, { error: 'Bật contest, kết nối API và nhập handle trước khi cập nhật.' }); return json(res, 200, { ok: true }); }
       if (url.pathname === '/api/export' && req.method === 'GET') return json(res, 200, config, { 'Content-Disposition': 'attachment; filename="sirocco-live-config.json"' });
       if (url.pathname === '/api/config' && req.method === 'POST') {
         const next = normalizeConfig(await body(req));
@@ -102,7 +111,7 @@ export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || p
         return json(res, 200, { ok: true });
       }
       if (url.pathname === '/api/archive' && req.method === 'GET') {
-        const archive = { title: config.title, exportedAt: new Date().toISOString(), candidates: config.candidates.filter(c => c.enabled).map(c => ({ name: c.name, group: c.group, ...snapshots.get(c.id) })) };
+        const archive = { title: config.title, exportedAt: new Date().toISOString(), candidates: config.candidates.filter(c => c.enabled).map(c => ({ name: c.name, group: c.group, ...snapshots.get(c.id) })), contests: Object.fromEntries(contestTracker.snapshots) };
         return json(res, 200, archive, { 'Content-Disposition': 'attachment; filename="sirocco-code-snapshot.json"' });
       }
       if (url.pathname === '/api/events' && req.method === 'GET') {
@@ -127,8 +136,9 @@ export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || p
   heartbeat.unref?.();
   reconcile();
   await new Promise((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); });
-  return { server, get config() { return config; }, get snapshots() { return snapshots; }, port: server.address().port, close: async () => {
+  return { server, get config() { return config; }, get snapshots() { return snapshots; }, get contests() { return contestTracker.snapshots; }, port: server.address().port, close: async () => {
     clearInterval(heartbeat);
+    contestTracker.close();
     for (const { reader } of readers.values()) reader.stop();
     for (const c of clients) c.res.end();
     await writeQueue;

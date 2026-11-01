@@ -1,4 +1,4 @@
-SIROCCO LIVE 1.2
+SIROCCO LIVE 1.3
 Sirocco Team · Windows x64 portable
 
 1. Giải nén TOÀN BỘ thư mục ZIP vào một thư mục riêng.
@@ -10,6 +10,14 @@ Sirocco Team · Windows x64 portable
 Phòng điều khiển: http://127.0.0.1:8765/
 Không chuyên:    http://127.0.0.1:8765/view/nonpro
 Chuyên Tin:      http://127.0.0.1:8765/view/pro
+
+THÀNH TÍCH CODEFORCES
+Mỗi nhóm có thể dùng một contest riêng. Bật "Thành tích Codeforces", nhập link contest,
+gắn handle và chọn phiên thi ở từng thí sinh, rồi bấm "Lưu & áp dụng".
+Gym cần API Key/Secret của tài khoản có quyền xem contest, nhập bằng nút Codeforces.
+Khoá được bảo vệ bằng Windows DPAPI và không đi theo file Xuất cấu hình.
+Dòng MANAGER cần bật "Dùng quyền quản lý Gym"; dòng này không có hạng chính thức.
+Chọn "Tự chọn phiên" ưu tiên chính thức; chọn riêng phiên nếu dùng tài khoản thử/luyện tập.
 
 ỨNG DỤNG CHẠY TRONG NỀN
 Đóng tab trình duyệt vẫn giữ nguồn live. Nhấp đúp logo ở khay hệ thống để mở lại.

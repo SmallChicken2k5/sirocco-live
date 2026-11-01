@@ -1,4 +1,6 @@
 import { $, $$, GROUPS, LANGUAGES, STATUS, VERSION, icon, esc, sourceUrl, time, toast, api, copy, options } from './common.js';
+import { CodeforcesSettings } from './codeforces-settings.js';
+import { contestControls, candidateContestFields, bindContestControls, updateContestControls } from './contest-ui.js';
 
 export class ControlRoom {
   constructor(root, config, state) {
@@ -6,13 +8,15 @@ export class ControlRoom {
     window.addEventListener('beforeunload', event => { if (this.dirty) { event.preventDefault(); event.returnValue = ''; } });
     window.addEventListener('keydown', event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); if(this.dirty) this.save(); } });
     this.compactInspector = localStorage.getItem('sirocco.inspector') === 'hidden';
+    for(const group of Object.values(this.config.groups))group.codeforces ||= {enabled:false,url:'',asManager:false,refreshSeconds:30,showOnLive:true};
+    this.codeforces = new CodeforcesSettings({ onChange: status=>{const button=$('#open-codeforces');if(button)button.dataset.connected=String(status.configured);}, onApply: result=>{const group=this.config.groups[this.group];Object.assign(group.codeforces,{enabled:true,url:result.source,asManager:result.asManager});this.changed(true);this.render();toast('Đã chọn contest cho nhóm. Gắn handle rồi lưu để đưa điểm lên live.');} });
     this.render(true);
   }
   render(animate = false) {
     const c = this.config, id = this.group, g = c.groups[id], members = c.candidates.filter(c => c.group === id);
     this.previewObserver?.disconnect();
     this.root.innerHTML = `<div class="studio-shell studio-v3">
-      <header class="topbar"><a class="brand" href="/" aria-label="Sirocco Live, phòng điều khiển"><img class="brand-logo" src="/assets/sirocco-symbol.png" alt="Sirocco Team"><span>SIROCCO <b>LIVE</b><small>BROADCAST STUDIO</small></span></a><div class="topbar-right"><span class="local-badge"><i></i> Máy chủ đang chạy</span><button class="icon-button mobile-help" id="show-guide-mobile" aria-label="Hướng dẫn thiết lập">${icon('question')}</button><span class="version">${VERSION}</span></div></header>
+      <header class="topbar"><a class="brand" href="/" aria-label="Sirocco Live, phòng điều khiển"><img class="brand-logo" src="/assets/sirocco-symbol.png" alt="Sirocco Team"><span>SIROCCO <b>LIVE</b><small>BROADCAST STUDIO</small></span></a><div class="topbar-right"><button class="text-button cf-open" id="open-codeforces" aria-label="Kết nối Codeforces">${icon('chart-line')}<span>Codeforces</span></button><span class="local-badge"><i></i> Máy chủ đang chạy</span><button class="icon-button mobile-help" id="show-guide-mobile" aria-label="Hướng dẫn thiết lập">${icon('question')}</button><span class="version">${VERSION}</span></div></header>
       <aside class="sidebar"><div class="nav-caption">NGUỒN PHÁT</div>${Object.keys(GROUPS).map(key => `<button class="nav-group ${id === key ? 'selected' : ''}" data-group="${key}" aria-pressed="${id === key}"><span class="nav-symbol">${icon(key === 'nonpro' ? 'squares-four' : 'columns')}</span><span>${esc(c.groups[key].title)}<small>Kênh ${key === 'nonpro' ? '01' : '02'}</small></span><span class="nav-count">${c.candidates.filter(p => p.group === key && p.enabled).length}</span></button>`).join('')}<div class="sidebar-bottom"><div class="sidebar-note">${icon('broadcast')}<span>Code + Input<small>Đồng bộ từ USACO IDE</small></span></div><button class="text-button" id="show-guide">${icon('question')} Hướng dẫn thiết lập</button><div class="team-credit">A SIROCCO TEAM TOOL</div></div></aside>
       <main class="control-main">
         <div class="page-heading"><div><div class="eyebrow">${esc(c.title)} <span>/</span> PHÒNG ĐIỀU KHIỂN</div><h1>${esc(g.title)}<span>${members.filter(c => c.enabled).length} thí sinh</span></h1><p>Khung phát trực tiếp từ những dòng code.</p></div><div class="heading-actions"><span id="save-state">${this.dirty ? 'Có thay đổi chưa áp dụng' : 'Đã lưu tại máy'}</span><button class="button primary" id="save-config" ${this.dirty ? '' : 'disabled'}>${icon('check')} Lưu & áp dụng</button></div></div>
@@ -27,12 +31,13 @@ export class ControlRoom {
             <div class="setting-section setting-last"><label class="check-label"><input id="show-header" type="checkbox" ${g.showHeader ? 'checked' : ''}> Hiện tên cuộc thi trên nguồn</label></div>
           </aside>
         </div>
+        ${contestControls(g.codeforces)}
         <section class="participants-section"><div class="section-toolbar"><div>${icon('users')}<strong>Danh sách thí sinh</strong><span class="muted small">${members.length} người</span></div><button class="button" id="add-candidate">${icon('plus')} Thêm thí sinh</button></div><div class="participant-list">${members.length ? members.map((candidate, i) => this.row(candidate,i,g)).join('') : `<div class="empty-list"><img src="/assets/sirocco-symbol.png" class="empty-logo" alt=""><h2>Khung hình đang chờ người viết</h2><p>Thêm link share USACO IDE để nhận code và Input trực tiếp.</p><div><button class="button primary" id="add-first">${icon('plus')} Thêm thí sinh</button>${!c.candidates.length ? '<button class="button" id="load-demo">Thử với 6 thí sinh mẫu</button>' : ''}</div></div>`}</div></section>
         <details class="project-settings"><summary>Tên cuộc thi & quản lý cấu hình<span>Lưu cục bộ trên máy này</span></summary><footer class="control-footer"><label>Tên cuộc thi<input id="contest-title" maxlength="80" value="${esc(c.title)}"></label><label>Tên nhóm<input id="group-title" maxlength="80" value="${esc(g.title)}"></label><div><button class="text-button" id="import-config">Nhập cấu hình</button><a class="text-button" href="/api/export" download>Xuất cấu hình</a><a class="text-button" href="/api/archive" download>Lưu code + input</a></div></footer></details>
         <div class="apply-bar ${this.dirty ? '' : 'hidden'}" id="apply-bar">${icon('sliders-horizontal')}<span><strong>Thay đổi chưa áp dụng</strong><small>Bản xem trước đã cập nhật.</small></span><button class="button" id="discard-changes">Huỷ thay đổi</button><button class="button primary" id="apply-config">${icon('check')} Lưu & áp dụng</button></div><div class="studio-footer"><span>SIROCCO TEAM</span><span>Code rõ. Theo dõi trọn vẹn.</span></div>
       </main>
     </div>${guide()}<input type="file" id="config-file" accept="application/json,.json" hidden>`;
-    this.bind(); this.updateStatuses();
+    this.bind(); this.syncFont(); this.updateStatuses();
     this.previewObserver = new ResizeObserver(entries => { for(const e of entries)e.target.style.setProperty('--preview-scale',String(e.contentRect.width/1920)); });
     this.previewObserver.observe($('.preview-viewport'));
     $('iframe').addEventListener('load',() => { this.preview(); $('.preview-frame').classList.add('ready'); });
@@ -41,8 +46,14 @@ export class ControlRoom {
     }
   }
   row(c,i,g) {
-    return `<article class="participant-row" data-id="${c.id}"><div class="participant-number">${String(i+1).padStart(2,'0')}</div><div class="participant-fields"><div class="participant-top"><input class="candidate-name" aria-label="Tên thí sinh" maxlength="80" value="${esc(c.name)}"><span class="status-pill" data-status-id="${c.id}"></span></div><input class="candidate-url" type="url" aria-label="Link share USACO IDE của ${esc(c.name)}" placeholder="https://ide.usaco.guide/…" value="${esc(c.url)}" ${this.config.demo ? 'disabled' : ''}><span class="candidate-message muted" data-message-id="${c.id}"></span></div><div class="participant-options"><select class="candidate-language" aria-label="Ngôn ngữ">${options(Object.entries(LANGUAGES),c.language)}</select><select class="candidate-group" aria-label="Nhóm thí sinh">${options(Object.keys(GROUPS).map(id=>[id,this.config.groups[id].title]),c.group)}</select></div><div class="participant-actions"><label class="check-label"><input class="candidate-enabled" type="checkbox" ${c.enabled ? 'checked' : ''}> Hiện trên live</label><div><button class="tiny-button focus-candidate ${g.focusId === c.id ? 'active' : ''}">${icon('star')} Nổi bật</button><button class="icon-button reconnect-candidate" aria-label="Kết nối lại ${esc(c.name)}" title="Kết nối lại">${icon('arrows-clockwise')}</button><button class="icon-button delete-candidate" aria-label="Xoá ${esc(c.name)}" title="Xoá thí sinh">${icon('trash')}</button></div></div></article>`;
+    return `<article class="participant-row" data-id="${c.id}">
+      <div class="participant-number">${String(i+1).padStart(2,'0')}</div>
+      <div class="participant-fields"><div class="participant-top"><input class="candidate-name" aria-label="Tên thí sinh" maxlength="80" value="${esc(c.name)}"><span class="status-pill" data-status-id="${c.id}"></span></div><input class="candidate-url" type="url" aria-label="Link share USACO IDE của ${esc(c.name)}" placeholder="https://ide.usaco.guide/…" value="${esc(c.url)}" ${this.config.demo ? 'disabled' : ''}><span class="candidate-message muted" data-message-id="${c.id}"></span>${candidateContestFields(c)}</div>
+      <div class="participant-options"><select class="candidate-language" aria-label="Ngôn ngữ">${options(Object.entries(LANGUAGES),c.language)}</select><select class="candidate-group" aria-label="Nhóm thí sinh">${options(Object.keys(GROUPS).map(id=>[id,this.config.groups[id].title]),c.group)}</select></div>
+      <div class="participant-actions"><label class="check-label"><input class="candidate-enabled" type="checkbox" ${c.enabled ? 'checked' : ''}> Hiện trên live</label><div><button class="tiny-button focus-candidate ${g.focusId === c.id ? 'active' : ''}">${icon('star')} Nổi bật</button><button class="icon-button reconnect-candidate" aria-label="Kết nối lại ${esc(c.name)}" title="Kết nối lại">${icon('arrows-clockwise')}</button><button class="icon-button delete-candidate" aria-label="Xoá ${esc(c.name)}" title="Xoá thí sinh">${icon('trash')}</button></div></div>
+    </article>`;
   }
+  openCodeforces() { const group=this.config.groups[this.group];this.codeforces.open({groupTitle:group.title,contest:group.codeforces.url,handle:this.config.candidates.find(c=>c.group===this.group&&c.codeforcesHandle)?.codeforcesHandle||'',asManager:group.codeforces.asManager}); }
   preview() { $('iframe')?.contentWindow?.postMessage({type:'sirocco-preview',group:this.group,title:this.config.title,settings:this.config.groups[this.group]},location.origin); }
   changed(preview = false) {
     this.dirty = true; this.revision++;
@@ -50,10 +61,16 @@ export class ControlRoom {
     if(preview)this.preview();
   }
   font(value) {
-    const g=this.config.groups[this.group]; g.fontSize=Math.max(10,Math.min(40,Number(value)));
-    $('#font-size').value=g.fontSize; $('#font-value').textContent=`${g.fontSize}px`;
-    $$('[data-font-preset]').forEach(button=>button.classList.toggle('active',Number(button.dataset.fontPreset)===g.fontSize));
+    const g=this.config.groups[this.group], next=Math.max(10,Math.min(40,Math.round(Number(value))));
+    if(!Number.isFinite(next)||g.fontSize===next)return;
+    g.fontSize=next;this.syncFont();
     this.changed(true);
+  }
+  syncFont() {
+    const size=this.config.groups[this.group].fontSize, range=$('#font-size');
+    range.value=size;range.style.setProperty('--range-fill',`${(size-10)/30*100}%`);range.setAttribute('aria-valuetext',`${size} pixel`);$('#font-value').textContent=`${size}px`;
+    $$('[data-font-preset]').forEach(button=>{const active=Number(button.dataset.fontPreset)===size;button.classList.toggle('active',active);button.setAttribute('aria-pressed',String(active));});
+    $$('[data-font-step]').forEach(button=>{button.disabled=Number(button.dataset.fontStep)<0?size<=10:size>=40;});
   }
   async save() {
     if(this.saving)return false;
@@ -74,6 +91,8 @@ export class ControlRoom {
   }
   bind() {
     const g=this.config.groups[this.group];
+    $('#open-codeforces').onclick=()=>this.openCodeforces();$('#open-codeforces').dataset.connected=String(this.codeforces.configured===true);
+    bindContestControls(this);
     $$('[data-group]').forEach(button=>button.onclick=async()=>{if(this.group===button.dataset.group)return;if(this.dirty&&!await this.save())return;this.group=button.dataset.group;this.render(true);});
     $('#toggle-inspector').onclick=()=>{this.compactInspector=!this.compactInspector;localStorage.setItem('sirocco.inspector',this.compactInspector?'hidden':'visible');$('.studio-workspace').classList.toggle('inspector-hidden',this.compactInspector);$('#toggle-inspector').setAttribute('aria-expanded',String(!this.compactInspector));$('#toggle-inspector').setAttribute('aria-label',`${this.compactInspector?'Hiện':'Ẩn'} thiết lập khung hình`);};
     $$('[data-layout]').forEach(button=>button.onclick=()=>{g.layout=button.dataset.layout;$('#layout').value=g.layout;$('#rotation-row').classList.toggle('hidden',g.layout!=='rotate');$$('[data-layout]').forEach(b=>{const active=b.dataset.layout===g.layout;b.classList.toggle('active',active);b.setAttribute('aria-pressed',String(active));});this.changed(true);});
@@ -107,6 +126,7 @@ export class ControlRoom {
   }
   update(state) { this.state=state;this.updateStatuses(); }
   updateStatuses() {
+    updateContestControls(this);
     $$('[data-status-id]').forEach(node=>{const c=this.config.candidates.find(c=>c.id===node.dataset.statusId);const s=this.state.snapshots[c?.id];const status=c?.enabled===false?'disabled':s?.status||'waiting';node.textContent=STATUS[status]||status;node.dataset.status=status;});
     $$('[data-message-id]').forEach(node=>{const s=this.state.snapshots[node.dataset.messageId];node.textContent=s?`${s.message}${s.updatedAt?` · ${time(s.updatedAt)}`:''}${s.inputStatus==='live'?' · Input đã nối':''}`:'Lưu thay đổi để bắt đầu nhận code và input.';});
     $$('[data-health-group]').forEach(node=>{const candidates=this.config.candidates.filter(c=>c.group===node.dataset.healthGroup&&c.enabled);const live=candidates.filter(c=>['live','demo'].includes(this.state.snapshots[c.id]?.status)).length;node.textContent=`${live}/${candidates.length} đang nhận`;node.dataset.connected=live>0?'true':'false';});
