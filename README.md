@@ -20,7 +20,15 @@ npm start
 
 Mở [phòng điều khiển](http://127.0.0.1:8765/). Trên Windows, sau lần cài thư viện và build đầu tiên, có thể mở `START.vbs` cho các lần dùng tiếp theo. Bản `.exe` portable là bộ mở tùy chọn cho cùng ứng dụng web.
 
-## Bản 1.4: Khung phát tuỳ chọn
+## Bản 1.5: VNOJ và phiên thi ảo
+
+- Trong **Điểm thi đấu**, chọn nguồn **VNOJ · ICPC**, bật theo dõi và nhập link `https://oj.vnoi.info/contest/<mã contest>`.
+- Nhập username VNOJ cho thí sinh rồi lưu. Bộ chọn phiên sẽ hiện các lượt chính thức/thi ảo đọc được từ BXH công khai. Chọn đúng lượt rồi lưu lại để ghim mã tham gia; nhiều lượt không tự chọn theo điểm cao nhất. Nếu phiên đã ghim biến mất, ứng dụng báo chưa tìm thấy và không đổi sang lượt khác.
+- Nguồn live ghép code/Input USACO với số bài, penalty, hạng và điểm từng bài từ VNOJ. Hạng theo BXH công khai gồm các phiên thi ảo, không phải BXH riêng giữa các thí sinh trên live. Theo dõi độc lập với code; lấy lại điểm mỗi 15–180 giây theo thiết lập và thời gian cache của VNOJ.
+- Hiện hỗ trợ BXH công khai trên `oj.vnoi.info`, thể thức ICPC. Không cần khoá API hoặc cookie. BXH riêng tư cần đăng nhập chưa được hỗ trợ. Dữ liệu đóng băng được giữ theo nguồn; chưa đọc verdict lần nộp riêng của từng phiên và không suy ra verdict từ tổng điểm.
+- Cấu hình Codeforces/Gym tiếp tục hoạt động; mỗi khung có nguồn điểm riêng. Trường cấu hình `codeforces.provider` dùng để phân biệt nguồn, giữ tương thích với file cấu hình cũ.
+
+## Khung phát tuỳ chọn
 
 - Có sẵn ba khung **Không chuyên**, **Chuyên Tin**, **ICPC**. Dùng **Thêm khung** để tạo nguồn theo tên tuỳ chọn; mỗi nguồn giữ bố cục, cỡ chữ và contest riêng.
 - Nút quản lý cạnh tên khung cho phép đổi tên hoặc xoá. Đổi tên giữ nguyên link Browser Source. Khi xoá khung có thí sinh, chọn khung đích để giữ toàn bộ tên, link USACO và handle. Có tối đa 12 khung và 16 thí sinh trong một phiên.

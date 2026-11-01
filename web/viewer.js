@@ -51,7 +51,7 @@ export class BroadcastView {
     document.title=`${title} — ${g.title}`;
     const contest=this.state.contests?.[groupId], contestVisible=g.codeforces?.enabled&&g.codeforces.showOnLive!==false;
     const meta=$('#broadcast-contest-meta');meta.classList.toggle('hidden',!contestVisible);
-    meta.textContent=contestVisible?[contest?.asManager?'QUYỀN QUẢN LÝ':'CODEFORCES',contest?.contest?.frozen?'BXH ĐÓNG BĂNG':contest?.status==='stale'?'ĐIỂM CŨ':contest?.contest?.type||'CHỜ ĐIỂM'].join(' · '):'';
+    meta.textContent=contestVisible?[contest?.asManager?'QUYỀN QUẢN LÝ':g.codeforces?.provider==='vnoj'?'VNOJ':'CODEFORCES',contest?.contest?.frozen?'BXH ĐÓNG BĂNG':contest?.status==='stale'?'ĐIỂM CŨ':contest?.contest?.type||'CHỜ ĐIỂM'].join(' · '):'';
     meta.dataset.status=contest?.status||'waiting';meta.title=contest?.checkedAt?`${contest.contest?.name||''} · ${time(contest.checkedAt)}`:'';
     for(const c of members){this.panel(c,g,this.state.snapshots[c.id]);renderTileContest(this.panels.get(c.id),c,g.codeforces,contest);}
     this.rotation(g,members);this.focus(g,members);this.clock();this.connection(this.online);

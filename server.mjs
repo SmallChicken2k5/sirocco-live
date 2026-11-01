@@ -7,12 +7,12 @@ import { defaultConfig, normalizeConfig, publicConfig } from './lib/config.mjs';
 import { UsacoReader } from './lib/usaco.mjs';
 import { DemoReader, demoCandidates } from './lib/demo.mjs';
 import { createCodeforcesConnection } from './lib/codeforces-connection.mjs';
-import { CodeforcesTracker } from './lib/codeforces-tracker.mjs';
+import { ContestTracker } from './lib/contest-tracker.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.txt': 'text/plain; charset=utf-8', '.svg':'image/svg+xml', '.png':'image/png', '.ico':'image/x-icon', '.woff2':'font/woff2' };
 const MAX_BODY = 1024 * 1024;
-export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || path.join(ROOT, 'data'), port = Number(process.env.PORT || 8765), readerOptions, codeforcesOptions } = {}) {
+export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || path.join(ROOT, 'data'), port = Number(process.env.PORT || 8765), readerOptions, codeforcesOptions, vnojOptions } = {}) {
   await mkdir(dataDir, { recursive: true });
   let config = defaultConfig();
   try { config = normalizeConfig(JSON.parse(await readFile(path.join(dataDir, 'config.json'), 'utf8'))); }
@@ -29,7 +29,7 @@ export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || p
     }
   };
   const broadcast = (event, data) => { for (const client of clients) send(client, event, data); };
-  const contestTracker = new CodeforcesTracker(codeforces, snapshot => broadcast('contest', snapshot));
+  const contestTracker = new ContestTracker(codeforces, snapshot => broadcast('contest', snapshot), vnojOptions);
   const onChange = snapshot => { snapshots.set(snapshot.id, snapshot); broadcast('candidate', snapshot); };
   function reconcile() {
     for (const [id, entry] of readers) {
@@ -81,13 +81,13 @@ export async function createStudio({ dataDir = process.env.SIROCCO_DATA_DIR || p
         if (req.headers.origin && ![`http://127.0.0.1:${localPort}`, `http://localhost:${localPort}`].includes(req.headers.origin)) return json(res, 403, { error: 'Không chấp nhận yêu cầu từ trang bên ngoài.' });
         if (req.headers['sec-fetch-site'] === 'cross-site') return json(res, 403, { error: 'Không chấp nhận yêu cầu từ trang bên ngoài.' });
       }
-      if (url.pathname === '/api/health') return json(res, 200, { ok: true, name: 'Sirocco Live', version: '1.4.0', port: localPort });
+      if (url.pathname === '/api/health') return json(res, 200, { ok: true, name: 'Sirocco Live', version: '1.5.0', port: localPort });
       if (url.pathname === '/api/state' && req.method === 'GET') return json(res, 200, envelope());
       if (url.pathname === '/api/config' && req.method === 'GET') return json(res, 200, config);
       if (url.pathname === '/api/codeforces/connection' && req.method === 'GET') return json(res, 200, codeforces.status());
       if (url.pathname === '/api/codeforces/check' && req.method === 'POST') { const result = await codeforces.check(await body(req)); contestTracker.reconcile(config); return json(res, 200, result); }
       if (url.pathname === '/api/codeforces/disconnect' && req.method === 'POST') { await body(req); const result = await codeforces.disconnect(); contestTracker.reconcile(config); return json(res, 200, result); }
-      if (url.pathname === '/api/codeforces/refresh' && req.method === 'POST') { const { groupId } = await body(req); if (!Object.hasOwn(config.groups, groupId) || !contestTracker.refresh(groupId)) return json(res, 400, { error: 'Bật contest, kết nối API và nhập handle trước khi cập nhật.' }); return json(res, 200, { ok: true }); }
+      if (['/api/contest/refresh', '/api/codeforces/refresh'].includes(url.pathname) && req.method === 'POST') { const { groupId } = await body(req); if (!Object.hasOwn(config.groups, groupId) || !contestTracker.refresh(groupId)) return json(res, 400, { error: 'Bật contest và nhập tài khoản thí sinh trước khi cập nhật.' }); return json(res, 200, { ok: true }); }
       if (url.pathname === '/api/export' && req.method === 'GET') return json(res, 200, config, { 'Content-Disposition': 'attachment; filename="sirocco-live-config.json"' });
       if (url.pathname === '/api/config' && req.method === 'POST') {
         const next = normalizeConfig(await body(req));

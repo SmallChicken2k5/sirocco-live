@@ -10,7 +10,7 @@ export class ControlRoom {
     window.addEventListener('keydown', event => { if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') { event.preventDefault(); if(this.dirty) this.save(); } });
     this.compactInspector = localStorage.getItem('sirocco.inspector') === 'hidden';
     for(const group of Object.values(this.config.groups))group.codeforces ||= {enabled:false,url:'',asManager:false,refreshSeconds:30,showOnLive:true};
-    this.codeforces = new CodeforcesSettings({ onChange: status=>{const button=$('#open-codeforces');if(button)button.dataset.connected=String(status.configured);}, onApply: result=>{const group=this.config.groups[this.group];Object.assign(group.codeforces,{enabled:true,url:result.source,asManager:result.asManager});this.changed(true);this.render();toast('Đã chọn contest cho nhóm. Gắn handle rồi lưu để đưa điểm lên live.');} });
+    this.codeforces = new CodeforcesSettings({ onChange: status=>{const button=$('#open-codeforces');if(button)button.dataset.connected=String(status.configured);}, onApply: result=>{const group=this.config.groups[this.group];Object.assign(group.codeforces,{provider:'codeforces',enabled:true,url:result.source,asManager:result.asManager});this.changed(true);this.render();toast('Đã chọn contest cho nhóm. Gắn handle rồi lưu để đưa điểm lên live.');} });
     this.render(true);
   }
   render(animate = false) {
@@ -50,12 +50,12 @@ export class ControlRoom {
   row(c,i,g) {
     return `<article class="participant-row" data-id="${c.id}">
       <div class="participant-number">${String(i+1).padStart(2,'0')}</div>
-      <div class="participant-fields"><div class="participant-top"><input class="candidate-name" aria-label="Tên thí sinh" maxlength="80" value="${esc(c.name)}"><span class="status-pill" data-status-id="${c.id}"></span></div><input class="candidate-url" type="url" aria-label="Link share USACO IDE của ${esc(c.name)}" placeholder="https://ide.usaco.guide/…" value="${esc(c.url)}" ${this.config.demo ? 'disabled' : ''}><span class="candidate-message muted" data-message-id="${c.id}"></span>${candidateContestFields(c)}</div>
+      <div class="participant-fields"><div class="participant-top"><input class="candidate-name" aria-label="Tên thí sinh" maxlength="80" value="${esc(c.name)}"><span class="status-pill" data-status-id="${c.id}"></span></div><input class="candidate-url" type="url" aria-label="Link share USACO IDE của ${esc(c.name)}" placeholder="https://ide.usaco.guide/…" value="${esc(c.url)}" ${this.config.demo ? 'disabled' : ''}><span class="candidate-message muted" data-message-id="${c.id}"></span>${candidateContestFields(c,this.config.groups[c.group].codeforces)}</div>
       <div class="participant-options"><label>Ngôn ngữ<select class="candidate-language" aria-label="Ngôn ngữ">${options(Object.entries(LANGUAGES),c.language)}</select></label><label>Khung phát<select class="candidate-group" aria-label="Nhóm thí sinh">${options(Object.keys(this.config.groups).map(id=>[id,this.config.groups[id].title]),c.group)}</select></label></div>
       <div class="participant-actions"><label class="check-label"><input class="candidate-enabled" type="checkbox" ${c.enabled ? 'checked' : ''}> Hiện trên live</label><div><button class="tiny-button focus-candidate ${g.focusId === c.id ? 'active' : ''}">${icon('star')} Nổi bật</button><button class="icon-button reconnect-candidate" aria-label="Kết nối lại ${esc(c.name)}" title="Kết nối lại">${icon('arrows-clockwise')}</button><button class="icon-button delete-candidate" aria-label="Xoá ${esc(c.name)}" title="Xoá thí sinh">${icon('trash')}</button></div></div>
     </article>`;
   }
-  openCodeforces() { const group=this.config.groups[this.group];this.codeforces.open({groupTitle:group.title,contest:group.codeforces.url,handle:this.config.candidates.find(c=>c.group===this.group&&c.codeforcesHandle)?.codeforcesHandle||'',asManager:group.codeforces.asManager}); }
+  openCodeforces() { const group=this.config.groups[this.group];this.codeforces.open({groupTitle:group.title,contest:group.codeforces.provider==='vnoj'?'':group.codeforces.url,handle:this.config.candidates.find(c=>c.group===this.group&&c.codeforcesHandle)?.codeforcesHandle||'',asManager:group.codeforces.asManager}); }
   async manageGroup(edit = false) {
     if (this.dirty && !await this.save()) return;
     if (!edit && Object.keys(this.config.groups).length >= MAX_GROUPS) return;

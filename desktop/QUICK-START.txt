@@ -1,4 +1,4 @@
-SIROCCO LIVE 1.4
+SIROCCO LIVE 1.5
 Sirocco Team · Windows x64 portable
 
 1. Giải nén TOÀN BỘ thư mục ZIP vào một thư mục riêng.
